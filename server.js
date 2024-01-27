@@ -58,7 +58,7 @@ const { error } = require('console')
 
 
 app.use(cors({
-    origin: ["http://localhost:3000"],
+    origin: ["http://3.95.170.196:3000"],
     methods: ['POST', 'PUT', 'GET', 'PATCH', 'DELETE'],
     credentials: true,
     allowedHeaders:"Origin, X-Api-Key, X-Requested-With, Content-Type, Accept, Authorization"
