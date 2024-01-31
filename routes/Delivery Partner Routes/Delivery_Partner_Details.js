@@ -56,28 +56,30 @@ router.get('/delivery_partner/home/profile', async (req, res) => {
     }
 })
 
-router.get('/partner/profile/order', (req, res) => {
+// Route for super admin to view product details
+router.get('/deleviry_partner/assigned/orders',(req, res) => {
     if (req.session.user) {
-        const user_id = req.session.user.id
-        const sql1 = "SELECT  product_name , total_amount ,product.product_id, orders.id,discount ,expected_delivery_date,order_items.quantity FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.user_id = ? and orders.role = 'partner';";
+        const user_id = req.session.user.id;
+        // console.log(user_id)
+        // View Product details by id
+        const sql = "SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type,total_amount,quantity ,product_name,product_price,description,assign_delivery_persion_id,expected_delivery_date FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id where orders.assign_delivery_persion_id = ? and orders.status !='Completed';";
 
-        db.query(sql1, [user_id], (err, data) => {
+        db.query(sql, [user_id], (err, data) => {
             if (err) {
-                return res.json(err);
+                console.error('Error updating order status:', err);
+                res.status(500).json({ error: 'Internal server error' });
+                return;
+            }else{
+
+                res.json(data);
             }
-            if (data.length > 0) {
-                //  res.json("Success");
-                // orders.push(data);
-                // console.log(orders)
-                return res.json(data);
-            } else {
-                return res.json(null);
-            }
-        })
-    } else {
+            // console.log(data);
+        });
+    }
+    else {
         res.status(500).send("data not found")
     }
-})
+});
 
 router.get('/delivery_partner/profile-details', (req, res) => {
     if (req.session.user) {

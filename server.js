@@ -44,7 +44,10 @@ const partner_details = require('./routes/Partner routes/Partner_Details.js')
 const partner_commission = require('./routes/Partner routes/Partner_Commission.js')
 const ShowDocuments = require('./routes/ShowDocuments.js')
 const delivery_partner_signup = require('./routes/Delivery Partner Routes/Delivery_Partner_SignUp.js')
-const delivery_partner_details = require('./routes/Delivery Partner Routes/Delivary_Partner_Details.js')
+const delivery_partner_details = require('./routes/Delivery Partner Routes/Delivery_Partner_Details.js')
+const orderoperation = require('./routes/Delivery Partner Routes/OrderOperation.js')
+const delivery_partner_commission = require('./routes/Delivery Partner Routes/DeliveryPartnerCommission.js')
+const myMap = require('./routes/Map/MyMap.js')
 // const videocall = require('./routes/VideoCallBackEnd.js')
 const e = require('express')
 const { error } = require('console')
@@ -58,10 +61,10 @@ const { error } = require('console')
 
 
 app.use(cors({
-    origin: ["http://3.95.170.196:3000"],
+    origin: ["http://localhost:3000"],
     methods: ['POST', 'PUT', 'GET', 'PATCH', 'DELETE'],
     credentials: true,
-    allowedHeaders:"Origin, X-Api-Key, X-Requested-With, Content-Type, Accept, Authorization"
+    allowedHeaders: "Origin, X-Api-Key, X-Requested-With, Content-Type, Accept, Authorization"
 
 }));
 app.use(cookieParser());
@@ -196,6 +199,9 @@ app.use('/', partner_commission); // Use this router to Sign up Partner
 app.use('/', ShowDocuments); // Use this router see documents
 app.use('/', delivery_partner_signup); // Use this router to Sign up,login,complete profile for Delivery Partners
 app.use('/', delivery_partner_details); // Use this router to see Profile details of Delivery Partner
+app.use('/', orderoperation); // Use this router to see order status
+app.use('/', delivery_partner_commission); // Use this for delivery persion commission
+app.use('/', myMap); // Use this router for Map
 // app.use('/', videocall); // Use this router see documents
 
 
@@ -213,7 +219,8 @@ app.get('/locations', async (req, res) => {
     } catch (error) {
         console.log(error)
     }
-})
+});
+
 /////****Search suggetion
 app.get('/search', async (req, res) => {
     // const sql = 'select * from product;';
@@ -284,9 +291,9 @@ app.get('/b2b/search', async (req, res) => {
                 }
             });
         });
-        
-       
-        
+
+
+
         return res.json(productResults);
 
     } catch (error) {
@@ -1512,7 +1519,7 @@ app.post('/sub-admin/reschedule/lab/status/:appoiment_id', async (req, res) => {
 app.post('/search', async (req, res) => {
     //     const { input } = req.query;
     const likefiled = req.body.input[0];
-    console.log(likefiled)
+    // console.log(likefiled)
     const input = `%${likefiled}%`
     // Implement your database query based on the search parameters
     // const sql = "SELECT  sub_admin.id ,name , address_sub_admin.address_id  ,City,product_name,typeOfMedicine,product.product_id,product_price,discount,description,phone,productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id where product.product_name Like ? Or address.city Like ? Or name Like  ?  Or typeOfMedicine Like ?  ;";
@@ -1646,7 +1653,7 @@ app.post('/search', async (req, res) => {
 
             Doctorimages = await Promise.all(imagesPromises);
         }
-        console.log([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages]);
+        // console.log([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages]);
         // return res.json([productResults, images]);
 
         return res.json([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages]);
@@ -2571,7 +2578,7 @@ app.post('/orders', async (req, res) => {
                         });
                     });
                 }));
-                // console.log("SubAdminIDs " + SubAdminIDs.length)
+                // console.log("SubAdminIDs " + SubAdminIDs)
                 if (SubAdminIDs.length > 1) {
                     // Insert order items into sub Admin
                     const insertOrdersInSubAdmin = await Promise.all(SubAdminIDs.map(SubAdminID => {
@@ -3971,6 +3978,28 @@ app.get('/superadmin/partner', (req, res) => {
         res.status(500).send("data not found")
     }
 })
+//This for all Delivery Partners Data
+app.get('/superadmin/delivery_partner', (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id
+        const sql1 = "select * from delivery_partner;";
+
+        db.query(sql1, (err, data) => {
+            if (err) {
+                return res.json(err);
+            }
+            if (data.length > 0) {
+                //  res.json("Success");
+                // console.log(data)
+                return res.json(data);
+            } else {
+                return res.json(null);
+            }
+        })
+    } else {
+        res.status(500).send("data not found")
+    }
+})
 //Coupon
 app.get('/superadmin/coupon', (req, res) => {
     if (req.session.user) {
@@ -4041,6 +4070,7 @@ app.delete('/superadmin/delete/:productId', (req, res) => {
         res.status(500).send("data not found");
     }
 });
+//Delete Partner Commission by super admin 
 app.delete('/superadmin/delete/commission/:commission_id', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id;
@@ -4048,6 +4078,34 @@ app.delete('/superadmin/delete/commission/:commission_id', (req, res) => {
         // console.log(`Deleting Commission with ID: ${commission_id}`);
         const sql = "SET FOREIGN_KEY_CHECKS=0;"
         const sql1 = "delete from partner_services where id = ?;";
+        db.query(sql, (err, data) => {
+            if (err) {
+                return res.json(err);
+            }
+            else {
+                db.query(sql1, [commission_id], (err, data) => {
+                    if (err) {
+                        console.error(err);
+                        return res.json(err);
+                    } else {
+                        // console.log(`Product with ID ${commission_id} deleted successfully.`);
+                        return res.json("success");
+                    }
+                });
+            }
+        })
+    } else {
+        res.status(500).send("data not found");
+    }
+});
+//Delete Partner Commission by super admin 
+app.delete('/superadmin/delete/delivery/commission/:commission_id', (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id;
+        const commission_id = req.params.commission_id;
+        // console.log(`Deleting Commission with ID: ${commission_id}`);
+        const sql = "SET FOREIGN_KEY_CHECKS=0;"
+        const sql1 = "delete from delivery_partner_services where id = ?;";
         db.query(sql, (err, data) => {
             if (err) {
                 return res.json(err);
@@ -4100,7 +4158,7 @@ app.delete('/superadmin/delete/coupon/:coupon_id', (req, res) => {
 
 app.post('/superadmin/addproduct', async (req, res) => {
     const date = new Date().toISOString().split('T')[0];
-    const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`sgst`,`cgst`,`productImageId`) values(?)";
+    const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`) values(?)";
 
     const values = [
         req.body.product_name,
@@ -4115,6 +4173,8 @@ app.post('/superadmin/addproduct', async (req, res) => {
         date,
         req.body.fromOfMedicine,
         req.body.typeOfMedicine,
+        req.body.manufacturing_Company_Name,
+        req.body.moleculesName,
         req.body.sgst,
         req.body.cgst,
         req.body.productImageId
@@ -4136,10 +4196,35 @@ app.post('/superadmin/addproduct', async (req, res) => {
     }
 
 })
-//add new Commission by super admin
+//add new partner Commission by super admin
 
 app.post('/superadmin/add-commission', async (req, res) => {
     const sql = "Insert into partner_services (`service_type`,`commision_type`,`commision`) values(?)";
+
+    const values = [
+        req.body.service_type,
+        req.body.commision_type,
+        req.body.commision,
+    ]
+    // console.log(values)
+    try {
+        db.query(sql, [values], (err, data) => {
+
+            if (err) {
+                console.log(err)
+                return res.json("Error");
+            } return res.json("success");
+        })
+
+    } catch (error) {
+        return res.json(error)
+    }
+
+})
+//add new delivery Commission by super admin
+
+app.post('/superadmin/delivery/add-commission', async (req, res) => {
+    const sql = "Insert into delivery_partner_services (`service_type`,`commision_type`,`commision`) values(?)";
 
     const values = [
         req.body.service_type,
@@ -4165,6 +4250,32 @@ app.post('/superadmin/add-commission', async (req, res) => {
 
 app.post('/superadmin/update-commission/:commission_id', async (req, res) => {
     const sql = "UPDATE partner_services SET service_type = ?, commision_type = ?, commision = ? WHERE id = ?;";
+    const id = req.params.commission_id;
+    // const values = [
+    //     req.body.service_type,
+    //     req.body.commision_type,
+    //     req.body.commision,
+    //     id
+    // ]
+    // console.log(values)
+    try {
+        db.query(sql, [req.body.service_type, req.body.commision_type, req.body.commision, id], (err, data) => {
+
+            if (err) {
+                console.log(err)
+                return res.json("Error");
+            } return res.json("success");
+        })
+
+    } catch (error) {
+        return res.json(error)
+    }
+
+})
+//Update delivery persion Commission by super admin
+
+app.post('/superadmin/delivery/update-commission/:commission_id', async (req, res) => {
+    const sql = "UPDATE delivery_partner_services SET service_type = ?, commision_type = ?, commision = ? WHERE id = ?;";
     const id = req.params.commission_id;
     // const values = [
     //     req.body.service_type,
@@ -4257,7 +4368,7 @@ app.get('/superadmin/orders/order/:order_id', (req, res) => {
     const order_id = req.params.order_id;
 
     // View Product details by id
-    const sql = "SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type ,product_name,product_price,description FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id where orders.id = ? ";
+    const sql = "SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type ,product_name,product_price,description,assign_delivery_persion_id,expected_delivery_date FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id where orders.id = ? ";
 
     db.query(sql, [order_id], (err, data) => {
         if (err) {
@@ -4297,7 +4408,7 @@ app.get('/superadmin/orders/customer/:customer_id', (req, res) => {
         }
     });
 });
-
+//update delivery date
 app.post('/superadmin/orders/delivery/:orderId', (req, res) => {
     const orderId = req.params.orderId;
     const values = [
@@ -4315,6 +4426,31 @@ app.post('/superadmin/orders/delivery/:orderId', (req, res) => {
             }
 
             res.json({ message: 'Order Delivery Date is Given' });
+        });
+    } catch (error) {
+        res.status(500).sendStatus("Internal Server Error")
+    }
+
+});
+//update Order details
+app.post('/superadmin/update/order', (req, res) => {
+    const values = [
+        order_id = req.body.order_id,
+        orderstatus = req.body.orderstatus,
+        expected_delivery_date = req.body.expected_delivery_date,
+        assigndeliverypersion = req.body.assigndeliverypersion,
+    ]
+    // Update the order Delivery Date in the database to indicate acceptance
+    const sql = 'UPDATE `orders` SET `expected_delivery_date` = ? , `status` = ? , `assign_delivery_persion_id` = ?  WHERE `id` = ?;';
+    try {
+        db.query(sql, [expected_delivery_date, orderstatus, assigndeliverypersion, order_id], (err) => {
+            if (err) {
+                console.error('Error updating order status:', err);
+                res.status(500).json({ error: 'Internal server error' });
+                return;
+            }
+
+            res.json('success');
         });
     } catch (error) {
         res.status(500).sendStatus("Internal Server Error")
@@ -4620,6 +4756,21 @@ app.post('/superadmin/partner/accept/:partner_id', (req, res) => {
             return;
         }
 
+        res.json({ message: 'Permission Garented' });
+    });
+});
+// Route for super admin to Give Permission to a delivery Partner
+app.post('/superadmin/delivery_partner/accept/:delivery_partner_id', (req, res) => {
+    const partner_id = req.params.delivery_partner_id;
+    // Update the order status in the database to indicate acceptance
+    const sql = 'UPDATE delivery_partner SET permission = ? WHERE id = ?';
+
+    db.query(sql, ['Approved', partner_id], (err) => {
+        if (err) {
+            console.error('Error updating order status:', err);
+            res.status(500).json({ error: 'Internal server error' });
+            return;
+        }
         res.json({ message: 'Permission Garented' });
     });
 });
@@ -5125,13 +5276,15 @@ app.post('/sub-admin/home/addproduct', async (req, res) => {
             req.body.typeOfMedicine,
             req.body.sgst,
             req.body.cgst,
+            req.body.manufacturing_Company_Name,
+            req.body.moleculesName,
             req.body.productImageId
 
         ]
 
         const creatProduct = await new Promise((resolve, reject) => {
             const date = new Date().toISOString().split('T')[0];
-            const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`sgst`,`cgst`,`productImageId`) values(?)";
+            const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`) values(?)";
             db.query(sql, [values], (err, result) => {
                 if (err) {
                     reject(err);
@@ -6005,8 +6158,56 @@ app.post('/upload', (req, res) => {
 
 });
 
+app.post('/upload/banner', (req, res) => {
+    // console.log('Upload')
+    try {
+        upload(req, res, (err) => {
+            if (err) {
+                console.error('Image upload error: ' + err);
+                res.status(500).json({ error: 'Image upload failed.' });
+            } else {
+                const { originalname, filename } = req.file;
+
+                const imageInfo = {
+                    name: originalname,
+                    path: `uploads/${filename}`,
+                };
+
+                const sql = 'INSERT INTO banner SET ?';
+
+                db.query(sql, imageInfo, (dbErr, result) => {
+                    if (dbErr) {
+                        console.error('Database error: ' + dbErr);
+                        res.status(500).json({ error: 'Database error.' });
+                    } else {
+                        lastInsertedImageId = (result.insertId);
+                        //   console.log(lastInsertedImageId);
+                        //   res.json({ message: 'Image uploaded successfully', result });
+                        res.json({ message: 'Image uploaded successfully', imageId: lastInsertedImageId }); // Send the image ID as a response
+                    }
+                });
+            }
+        });
+    } catch (error) {
+        console.log(error)
+    }
+
+});
+
 app.get('/images', (req, res) => {
     const sql = 'SELECT * FROM images where id = ?';
+
+    db.query(sql, [lastInsertedImageId], (err, result) => {
+        if (err) {
+            console.error('Database error: ' + err);
+            res.status(500).json({ error: 'Database error.' });
+        } else {
+            res.json(result);
+        }
+    });
+});
+app.get('/images/banner', (req, res) => {
+    const sql = 'SELECT * FROM banner';
 
     db.query(sql, [lastInsertedImageId], (err, result) => {
         if (err) {
