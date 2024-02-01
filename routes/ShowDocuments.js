@@ -14,7 +14,7 @@ router.get('/image/:image_id', (req, res) => {
             res.status(500).json({ error: 'Database error.' });
         } else {
             // res.json(result);
-            console.log(result)
+            // console.log(result)
             return res.json(result);
         }
     });
