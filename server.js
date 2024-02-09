@@ -755,9 +755,9 @@ app.get('/doctortime/:id', async (req, res) => {
 // get doctor_id, day_of_week, start_time, end_time from doctor_regular_time with doctor_id
 app.get('/doctor/:id', async (req, res) => {
     const doctor_id = Number(req.params.id);
-    const sql = `SELECT * FROM doctors_timetable WHERE doctor_id = ${db.escape(doctor_id)}`;
+    const sql = `SELECT * FROM doctors_timetable WHERE doctor_id = ?`;
     try {
-        db.query(sql, (err, data) => {
+        db.query(sql, [doctor_id], (err, data) => {
             if (err) {
                 console.log(err);
             }
@@ -1517,14 +1517,20 @@ app.post('/sub-admin/reschedule/lab/status/:appoiment_id', async (req, res) => {
 //     product.name LIKE '%calpole%'
 // OR typeOfMedicine LIKE '%calpole%';";
 app.post('/search', async (req, res) => {
-    //     const { input } = req.query;
-    const likefiled = req.body.input[0];
+    console.log(req.body)
+    let likefiled;
+
+    if (req.body.from === 'category') {
+        likefiled = req.body.input;
+    } else {
+        likefiled = req.body.input[0];
+    }
     // console.log(likefiled)
     const input = `%${likefiled}%`
     // Implement your database query based on the search parameters
     // const sql = "SELECT  sub_admin.id ,name , address_sub_admin.address_id  ,City,product_name,typeOfMedicine,product.product_id,product_price,discount,description,phone,productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id where product.product_name Like ? Or address.city Like ? Or name Like  ?  Or typeOfMedicine Like ?  ;";
     // try {
-    //     db.query(sql, [input, input, input, input], (err, data) => {
+    //     db.query(sql, [input, input, input, input,input], (err, data) => {
     //         if (err) {
     //             console.log(err);
     //         }
@@ -1540,13 +1546,14 @@ app.post('/search', async (req, res) => {
     //This is for Product
     try {
         // const user_id = req.session.user.id;
-        const query = "SELECT  sub_admin.id ,product_sub_admin.product_id as id ,name , address_sub_admin.address_id  ,City,product_name,typeOfMedicine,product.product_id,product_price,discount,description,phone,productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id where product.product_name Like ? Or address.city Like ? Or name Like  ?  Or typeOfMedicine Like ?;";
+        const query = "SELECT  sub_admin.id ,product_sub_admin.product_id as id ,name , address_sub_admin.address_id  ,City,product_name,typeOfMedicine,product.product_id,product_price,discount,description,phone,productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id where product.product_name Like ? Or product.category Like ? Or address.city Like ? Or name Like  ?  Or typeOfMedicine Like ?;";
         const productResults = await new Promise((resolve, reject) => {
-            db.query(query, [input, input, input, input], (err, result) => {
+            db.query(query, [input, input, input, input, input], (err, result) => {
                 if (err) {
                     console.error('Error retrieving data: ' + err.message);
                     reject(err);
                 } else {
+                    // console.log(query)
                     // console.log('Data retrieved successfully');
                     resolve(result);
                 }
@@ -1582,7 +1589,7 @@ app.post('/search', async (req, res) => {
             " INNER JOIN laboratory_tests_details ON laboratory_tests_details.clinic_id = sub_admin.id" +
             " where laboratory_tests_details.Test_Name Like ? Or address.city Like ? Or name Like  ?;";
         const LabResults = await new Promise((resolve, reject) => {
-            db.query(query1, [input, input, input, input], (err, result) => {
+            db.query(query1, [input, input, input, input, input], (err, result) => {
                 if (err) {
                     console.error('Error retrieving data: ' + err.message);
                     reject(err);
@@ -1653,10 +1660,49 @@ app.post('/search', async (req, res) => {
 
             Doctorimages = await Promise.all(imagesPromises);
         }
-        // console.log([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages]);
+        const query3 = `
+        SELECT sub_admin.id,name,Landmark,SubAdminImageId,address.pin  from sub_admin
+        INNER JOIN address_sub_admin ON address_sub_admin.sub_admin_id = sub_admin.id 
+        INNER JOIN sub_admin_details ON sub_admin_details.sub_admin_id = sub_admin.id 
+        INNER JOIN address ON address_sub_admin.sub_admin_id = address.address_id   
+        where name Like ?
+        Or Landmark Like ?
+        and role = 'Medicine Shop'
+        and permission = 'Approve';`;
+        const MedicineShops = await new Promise((resolve, reject) => {
+            db.query(query3, [input, input], (err, result) => {
+                if (err) {
+                    console.error('Error retrieving data: ' + err.message);
+                    reject(err);
+                } else {
+                    // console.log('Data retrieved successfully');
+                    resolve(result);
+                }
+            });
+        });
+        let MedicineShopsImage;
+        if (MedicineShops.length > 0) {
+            const imagesPromises = MedicineShops.map((mshop) => {
+                return new Promise((resolve, reject) => {
+                    const sql = 'SELECT * FROM images WHERE id = ?';
+                    db.query(sql, [mshop.SubAdminImageId], (err, result) => {
+                        if (err) {
+                            console.error('Database error: ' + err);
+                            reject(err);
+                        } else {
+                            // console.log(result[0]);
+                            resolve(result[0]);
+                        }
+                    });
+                });
+            });
+
+            MedicineShopsImage = await Promise.all(imagesPromises);
+        }
+        console.log([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages,MedicineShops,MedicineShopsImage]);
         // return res.json([productResults, images]);
 
-        return res.json([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages]);
+        return res.json([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages, MedicineShops, MedicineShopsImage]);
 
     } catch (error) {
         console.error('Error: ', error);
@@ -2006,25 +2052,185 @@ app.get('/product', async (req, res) => {
         console.error('Error: ', error);
         return res.status(500).json({ error: 'Error retrieving product details from the database' });
     }
-    // } else {
-    //     return res.status(500).send("Data not found");
-    // }
-    // });
 
+})
+//this give suggested Product on basis of location
+app.get('/product/suggestedProducts', async (req, res) => {
 
-    // const sql = "Select * from product";
+    // app.get("/superadmin/product", async (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id;
+        const address = await new Promise((resolve, reject) => {
+            const sql1 = "SELECT * from address where user_id = ? ;";
+            db.query(sql1, [user_id], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+        // console.log(address)
 
-    // db.query(sql, (err, data) => {
-    //     if (err) {
-    //         return res.json("Error");
-    //     }
-    //     if (data.length > 0) {
-    //         //  res.json("Success");
-    //         return res.json(data);
-    //     } else {
-    //         return res.json("Faile");
-    //     }
-    // })
+        try {
+            // const user_id = req.session.user.id;
+            const sql = "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.City = ?;";
+            const productResults = await new Promise((resolve, reject) => {
+                db.query(sql, [address[0].City], (err, result) => {
+                    if (err) {
+                        console.error('Error retrieving data: ' + err.message);
+                        reject(err);
+                    } else {
+                        // console.log('Data retrieved successfully');
+                        resolve(result);
+                    }
+                });
+            });
+
+            if (productResults.length > 0) {
+                const imagesPromises = productResults.map((product) => {
+                    return new Promise((resolve, reject) => {
+                        const sql = 'SELECT * FROM images WHERE id = ?';
+                        db.query(sql, [product.productImageId], (err, result) => {
+                            if (err) {
+                                console.error('Database error: ' + err);
+                                reject(err);
+                            } else {
+                                // console.log(result[0]);
+                                resolve(result[0]);
+                            }
+                        });
+                    });
+                });
+
+                const images = await Promise.all(imagesPromises);
+                // console.log([productResults, images]);
+                return res.json([productResults, images]);
+            } else {
+                return res.json([]); // Return an empty response if no doctor details found
+            }
+        } catch (error) {
+            console.error('Error: ', error);
+            return res.status(500).json({ error: 'Error retrieving product details from the database' });
+        }
+
+    } else {
+        return res.json(undefined);
+    }
+
+})
+//this give suggested Doctor on basis of location
+app.get('/doctors/suggestedDoctors', async (req, res) => {
+    // app.get("/superadmin/product", async (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id;
+        const address = await new Promise((resolve, reject) => {
+            const sql1 = "SELECT * from address where user_id = ? ;";
+            db.query(sql1, [user_id], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    // console.log(rows)
+                    resolve(rows);
+                }
+            });
+        });
+        // console.log(address)
+
+        try {
+            // const user_id = req.session.user.id;
+            // const sql = "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.City = ?;";
+            const sql = "select * from doctors_details where location = ?;";
+            const doctorResults = await new Promise((resolve, reject) => {
+                db.query(sql, [address[0].City], (err, result) => {
+                    if (err) {
+                        console.error('Error retrieving data: ' + err.message);
+                        reject(err);
+                    } else {
+                        // console.log('Data retrieved successfully');
+                        // console.log(result)
+                        resolve(result);
+                    }
+                });
+            });
+
+            if (doctorResults.length > 0) {
+                const imagesPromises = doctorResults.map((doctor) => {
+                    return new Promise((resolve, reject) => {
+                        const sql = 'SELECT * FROM images WHERE id = ?';
+                        db.query(sql, [doctor.doctor_imageId], (err, result) => {
+                            if (err) {
+                                console.error('Database error: ' + err);
+                                reject(err);
+                            } else {
+                                // console.log(result[0]);
+                                resolve(result[0]);
+                            }
+                        });
+                    });
+                });
+
+                const images = await Promise.all(imagesPromises);
+                // console.log([productResults, images]);
+                return res.json([doctorResults, images]);
+            } else {
+                return res.json([]); // Return an empty response if no doctor details found
+            }
+        } catch (error) {
+            console.error('Error: ', error);
+            return res.status(500).json({ error: 'Error retrieving product details from the database' });
+        }
+    } else {
+        return res.json(undefined);
+    }
+
+})
+app.get('/catagorys', async (req, res) => {
+
+    // app.get("/superadmin/product", async (req, res) => {
+    // if (req.session.user) {
+    try {
+        // const user_id = req.session.user.id;
+        const query = "SELECT DISTINCT category FROM product;";
+        const productResults = await new Promise((resolve, reject) => {
+            db.query(query, (err, result) => {
+                if (err) {
+                    console.error('Error retrieving data: ' + err.message);
+                    reject(err);
+                } else {
+                    // console.log('Data retrieved successfully');
+                    resolve(result);
+                }
+            });
+        });
+
+        // if (productResults.length > 0) {
+        // const imagesPromises = productResults.map((product) => {
+        //     return new Promise((resolve, reject) => {
+        //         const sql = 'SELECT * FROM images WHERE id = ?';
+        //         db.query(sql, [product.productImageId], (err, result) => {
+        //             if (err) {
+        //                 console.error('Database error: ' + err);
+        //                 reject(err);
+        //             } else {
+        //                 // console.log(result[0]);
+        //                 resolve(result[0]);
+        //             }
+        //         });
+        //     });
+        // });
+
+        // const images = await Promise.all(imagesPromises);
+        // console.log(images);
+        // } else {
+        //     return res.json([]); // Return an empty response if no doctor details found
+        // }
+        return res.json(productResults);
+    } catch (error) {
+        console.error('Error: ', error);
+        return res.status(500).json({ error: 'Error retrieving product details from the database' });
+    }
+
 })
 app.get('/doctors', async (req, res) => {
 
@@ -2063,7 +2269,7 @@ app.get('/doctors', async (req, res) => {
             });
 
             const images = await Promise.all(imagesPromises);
-            // console.log(images);
+            // console.log([doctorResults, images]);
             return res.json([doctorResults, images]);
         } else {
             return res.json([]); // Return an empty response if no doctor details found
@@ -2165,40 +2371,98 @@ app.get('/medicines', (req, res) => {
     })
 })
 
-app.get('/cart', (req, res) => {
+app.get('/cart', async (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id;
         const user = req.session.user;
         // console.log(user)
         if (user.role === 'customer' || user.role === 'admin') {
-            const sql1 = "SELECT  product_name , product_price , cart_id,discount,quantity, DrugOrNot , sgst,cgst FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ?;";
+            try {
+                // const user_id = req.session.user.id;
+                const query = "SELECT product.product_id, product_name , description,product_price , cart_id,discount,quantity, DrugOrNot , sgst,cgst,productImageId FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ?;";
+                const productResults = await new Promise((resolve, reject) => {
+                    db.query(query, [user_id], (err, result) => {
+                        if (err) {
+                            console.error('Error retrieving data: ' + err.message);
+                            reject(err);
+                        } else {
+                            // console.log('Data retrieved successfully');
+                            resolve(result);
+                        }
+                    });
+                });
 
-            db.query(sql1, [user_id], (err, data) => {
-                if (err) {
-                    return res.json("Error");
-                }
-                if (data.length > 0) {
-                    //  res.json("Success");
-                    return res.json(data);
+                if (productResults.length > 0) {
+                    const imagesPromises = productResults.map((product) => {
+                        return new Promise((resolve, reject) => {
+                            const sql = 'SELECT * FROM images WHERE id = ?';
+                            db.query(sql, [product.productImageId], (err, result) => {
+                                if (err) {
+                                    console.error('Database error: ' + err);
+                                    reject(err);
+                                } else {
+                                    // console.log(result[0]);
+                                    resolve(result[0]);
+                                }
+                            });
+                        });
+                    });
+
+                    const images = await Promise.all(imagesPromises);
+                    // console.log(images);
+                    return res.json([productResults, images]);
                 } else {
-                    return res.json(null)
+                    return res.json([]); // Return an empty response if no doctor details found
                 }
-            })
+            } catch (error) {
+                console.error('Error: ', error);
+                return res.status(500).json({ error: 'Error retrieving product details from the database' });
+            }
+
         }
         else {
-            const sql1 = "SELECT  product_name , product_price , cart_id,discount,quantity, DrugOrNot , sgst,cgst FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ? and cartTable.role = 'partner'";
 
-            db.query(sql1, [user_id], (err, data) => {
-                if (err) {
-                    return res.json("Error");
-                }
-                if (data.length > 0) {
-                    //  res.json("Success");
-                    return res.json(data);
+            try {
+                // const user_id = req.session.user.id;
+                const query = "SELECT  product_name , product_price ,description, cart_id,discount,quantity, DrugOrNot , sgst,cgst,productImageId FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ? and cartTable.role = 'partner'";
+                const productResults = await new Promise((resolve, reject) => {
+                    db.query(query, [user_id], (err, result) => {
+                        if (err) {
+                            console.error('Error retrieving data: ' + err.message);
+                            reject(err);
+                        } else {
+                            // console.log('Data retrieved successfully');
+                            resolve(result);
+                        }
+                    });
+                });
+
+                if (productResults.length > 0) {
+                    const imagesPromises = productResults.map((product) => {
+                        return new Promise((resolve, reject) => {
+                            const sql = 'SELECT * FROM images WHERE id = ?';
+                            db.query(sql, [product.productImageId], (err, result) => {
+                                if (err) {
+                                    console.error('Database error: ' + err);
+                                    reject(err);
+                                } else {
+                                    // console.log(result[0]);
+                                    resolve(result[0]);
+                                }
+                            });
+                        });
+                    });
+
+                    const images = await Promise.all(imagesPromises);
+                    // console.log(images);
+                    return res.json([productResults, images]);
                 } else {
-                    return res.json(null)
+                    return res.json([]); // Return an empty response if no doctor details found
                 }
-            })
+            } catch (error) {
+                console.error('Error: ', error);
+                return res.status(500).json({ error: 'Error retrieving product details from the database' });
+            }
         }
 
 
@@ -2525,6 +2789,7 @@ app.post('/orders', async (req, res) => {
                 const date = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
                 const total_amount = req.body.total_amount;
                 const payment_type = req.body.payment_type;
+                const prescriptionId = req.body.prescriptionId;
                 // Create the order
                 const createOrder = await new Promise((resolve, reject) => {
                     const sql2 = "INSERT INTO orders (user_id, order_date, status,role) VALUES (?, ?, 'pending','customer');";
@@ -2651,10 +2916,21 @@ app.post('/orders', async (req, res) => {
                         });
                     });
                 }));
+                // Insert the Prescription
+                const InsertPrescription = await new Promise((resolve, reject) => {
+                    const sql2 = "update prescription set order_id = ? where id = ?;";
+                    db.query(sql2, [createOrder, prescriptionId], (err, result) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(result.insertId); // Get the newly inserted order ID
+                        }
+                    });
+                });
                 // After processing the order, notify the super admin and sub-admins.
                 // io.emit('new-order', 'A new order has been placed.');
 
-                res.json("success");
+                res.json([createOrder, productInfo]);
 
             }
             else {
@@ -2815,10 +3091,21 @@ app.post('/orders', async (req, res) => {
                         });
                     });
                 }));
+                // Insert the Prescription
+                const InsertPrescription = await new Promise((resolve, reject) => {
+                    const sql2 = "update prescription set order_id = ? where id = ?;";
+                    db.query(sql2, [createOrder, prescriptionId], (err, result) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(result.insertId); // Get the newly inserted order ID
+                        }
+                    });
+                });
                 // After processing the order, notify the super admin and sub-admins.
                 // io.emit('new-order', 'A new order has been placed.');
 
-                res.json("success");
+                res.json([createOrder, productInfo]);
 
             }
             // res.json("success",{ message: 'Order placed successfully.' });
@@ -2975,21 +3262,33 @@ app.delete('/orders/:id', async (req, res) => {
                                         reject(err);
                                     } else {
                                         console.log("order_items Delete")
-                                        // Remove the order from the array (or mark it as canceled in the database)
-                                        const deleteOrder = await new Promise((resolve, reject) => {
-                                            const sql = "delete from orders where id=?";
-                                            db.query(sql, [orderId], (err, result) => {
+                                        const prescriptionDelete = await new Promise((resolve, reject) => {
+                                            const sql = "delete from prescription where order_id=?";
+                                            db.query(sql, [orderId], async (err, result) => {
                                                 if (err) {
                                                     reject(err);
                                                 } else {
-                                                    console.log("orders Delete")
-                                                    //orders.push(result) 
-                                                    // res.status(204).send('success');
-                                                    return res.json('success');
-                                                    //resolve(result);
+                                                    // Remove the order from the array (or mark it as canceled in the database)
+
+                                                    const deleteOrder = await new Promise((resolve, reject) => {
+                                                        const sql = "delete from orders where id=?";
+                                                        db.query(sql, [orderId], (err, result) => {
+                                                            if (err) {
+                                                                reject(err);
+                                                            } else {
+                                                                console.log("orders Delete")
+                                                                //orders.push(result) 
+                                                                // res.status(204).send('success');
+                                                                return res.json('success');
+                                                                //resolve(result);
+                                                            }
+                                                        });
+                                                    });
                                                 }
                                             });
                                         });
+                                        // Remove the order from the array (or mark it as canceled in the database)
+
                                     }
                                 });
                             });
@@ -3004,6 +3303,123 @@ app.delete('/orders/:id', async (req, res) => {
             }
         });
     });
+
+    // console.log(orders)
+
+
+});
+// Remove product from cart
+app.delete('/remove/cart/product/:id', async (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id;
+
+        const product_id = parseInt(req.params.id);
+        try {
+            // const { product_id, quantity } = product;
+            const sql5 = "DELETE FROM cartTable WHERE user_id = ? AND product_id = ?;";
+            db.query(sql5, [user_id, product_id], (err, result) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    return res.json('success');
+                }
+            });
+        } catch (error) {
+            console.log("Remove product from cart not working", error)
+        }
+
+
+
+    } else {
+
+        res.send(500, "data not found")
+
+    }
+    // console.log(orderId)
+    // const findOrder = await new Promise((resolve, reject) => {
+    //     const sql = "select * from orders where id=?";
+    //     db.query(sql, [orderId], async (err, result) => {
+    //         if (err) {
+    //             reject(err);
+    //         } else {
+    //             // console.log(result[0])
+    //             // orders.push(result)
+    //             // resolve(result);
+    //             // Find the order in the orders array (or query the database in production)
+    //             // const orderIndex = orders.findIndex((order) => order[0].id === orderId);
+
+    //             if (result[0].id !== orderId) {
+
+    //                 return res.status(404).json({ message: 'Order not found' });
+    //             }
+
+    //             // console.log(orderIndex)
+    //             // const order = orders[orderIndex];
+    //             if (!canCancelOrder(result[0])) {
+    //                 // console.log('no')
+    //                 // return res.status(400).json({ message: 'Order cannot be canceled at this time' })
+    //                 return res.json(null);
+    //             }
+
+    //             // Remove the order from the array (or mark it as canceled in the database)
+    //             const deletePayment = await new Promise((resolve, reject) => {
+    //                 const sql = "delete from payments where order_id=?";
+    //                 db.query(sql, [orderId], async (err, result) => {
+    //                     if (err) {
+    //                         reject(err);
+    //                     } else {
+
+    //                         console.log("payment Delete")
+
+    //                         // Remove the order from the array (or mark it as canceled in the database)
+    //                         const orderItems = await new Promise((resolve, reject) => {
+    //                             const sql = "delete from order_items where order_id=?";
+    //                             db.query(sql, [orderId], async (err, result) => {
+    //                                 if (err) {
+    //                                     reject(err);
+    //                                 } else {
+    //                                     console.log("order_items Delete")
+    //                                     const prescriptionDelete = await new Promise((resolve, reject) => {
+    //                                         const sql = "delete from prescription where order_id=?";
+    //                                         db.query(sql, [orderId], async (err, result) => {
+    //                                             if (err) {
+    //                                                 reject(err);
+    //                                             } else {
+    //                                                 // Remove the order from the array (or mark it as canceled in the database)
+
+    //                                                 const deleteOrder = await new Promise((resolve, reject) => {
+    //                                                     const sql = "delete from orders where id=?";
+    //                                                     db.query(sql, [orderId], (err, result) => {
+    //                                                         if (err) {
+    //                                                             reject(err);
+    //                                                         } else {
+    //                                                             console.log("orders Delete")
+    //                                                             //orders.push(result) 
+    //                                                             // res.status(204).send('success');
+    //                                                             return res.json('success');
+    //                                                             //resolve(result);
+    //                                                         }
+    //                                                     });
+    //                                                 });
+    //                                             }
+    //                                         });
+    //                                     });
+    //                                     // Remove the order from the array (or mark it as canceled in the database)
+
+    //                                 }
+    //                             });
+    //                         });
+    //                     }
+    //                 });
+    //             });
+
+
+    //             //orders.splice(orderIndex, 1);
+
+    //             // res.status(204).send('success');
+    //         }
+    //     });
+    // });
 
     // console.log(orders)
 
@@ -4779,7 +5195,7 @@ app.get('/madicine/medicineshops', async (req, res) => {
 
     try {
         // const user_id = req.session.user.id;
-        const query = "SELECT * FROM sub_admin where role = 'Medicine Shop'";
+        const query = "SELECT * FROM sub_admin where role = 'Medicine Shop' and permission = 'Approve'";
         const subResults = await new Promise((resolve, reject) => {
             db.query(query, (err, result) => {
                 if (err) {
@@ -4843,7 +5259,7 @@ app.get('/laboratory/laboratorys', async (req, res) => {
 
     try {
         // const user_id = req.session.user.id;
-        const query = "SELECT sub_admin.id,name,phone,role,LicenceImageId,SubAdminImageId,description,landmark,OpeningTime,CloseingTime,city FROM sub_admin inner join sub_admin_details On sub_admin.id = sub_admin_details.sub_admin_id inner join address_sub_admin On sub_admin.id = address_sub_admin.sub_admin_id inner join address On address_sub_admin.address_id = address.address_id  where role = 'Laboratory';";
+        const query = "SELECT sub_admin.id,name,phone,role,LicenceImageId,SubAdminImageId,description,landmark,OpeningTime,CloseingTime,city FROM sub_admin inner join sub_admin_details On sub_admin.id = sub_admin_details.sub_admin_id inner join address_sub_admin On sub_admin.id = address_sub_admin.sub_admin_id inner join address On address_sub_admin.address_id = address.address_id  where role = 'Laboratory' and permission = 'Approve';";
         const subResults = await new Promise((resolve, reject) => {
             db.query(query, (err, result) => {
                 if (err) {
@@ -5363,6 +5779,97 @@ app.get('/sub-admin/product', (req, res) => {
         res.status(500).send("data not found")
     }
 })
+app.get('/medicineshop/products/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = " select * from product  INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id where sub_admin_id = ? ";
+    const query1 = " SELECT * FROM hh_dev_db.sub_admin where id = ?;";
+    try {
+        
+        const medicineShop = await new Promise((resolve, reject) => {
+            db.query(query1,[id], (err, result) => {
+                if (err) {
+                    console.error('Error retrieving data: ' + err.message);
+                    reject(err);
+                } else {
+                    // console.log('Data retrieved successfully');
+                    resolve(result);
+                }
+            });
+        });
+        let medicineShopimages ;
+
+        if(medicineShop.length > 0){
+            const imagesPromises = medicineShop.map((mshop) => {
+                return new Promise((resolve, reject) => {
+                    const sql = 'SELECT * FROM images WHERE id = ?';
+                    db.query(sql, [mshop.SubAdminImageId], (err, result) => {
+                        if (err) {
+                            console.error('Database error: ' + err);
+                            reject(err);
+                        } else {
+                            // console.log(result[0]);
+                            resolve(result[0]);
+                        }
+                    });
+                });
+            });
+         medicineShopimages = await Promise.all(imagesPromises);
+
+        }
+        const productResults = await new Promise((resolve, reject) => {
+            db.query(query,[id], (err, result) => {
+                if (err) {
+                    console.error('Error retrieving data: ' + err.message);
+                    reject(err);
+                } else {
+                    // console.log('Data retrieved successfully');
+                    resolve(result);
+                }
+            });
+        });
+
+        if (productResults.length > 0) {
+            const imagesPromises = productResults.map((product) => {
+                return new Promise((resolve, reject) => {
+                    const sql = 'SELECT * FROM images WHERE id = ?';
+                    db.query(sql, [product.productImageId], (err, result) => {
+                        if (err) {
+                            console.error('Database error: ' + err);
+                            reject(err);
+                        } else {
+                            // console.log(result[0]);
+                            resolve(result[0]);
+                        }
+                    });
+                });
+            });
+
+
+
+            const images = await Promise.all(imagesPromises);
+            // console.log(images);
+            return res.json([productResults, images,medicineShop,medicineShopimages]);
+        } else {
+            return res.json([]); // Return an empty response if no doctor details found
+        }
+    } catch (error) {
+        console.error('Error: ', error);
+        return res.status(500).json({ error: 'Error retrieving product details from the database' });
+    }
+
+    db.query(sql1, [user_id], (err, data) => {
+        if (err) {
+            return res.json(err);
+        }
+        if (data.length > 0) {
+            //  res.json("Success");
+            return res.json(data);
+        } else {
+            return res.json(null);
+        }
+    })
+
+})
 
 app.delete('/sub-admin/home/delete/:productId', (req, res) => {
     if (req.session.user) {
@@ -5495,21 +6002,49 @@ app.get('/sub-admin/orders/product/:product_id', (req, res) => {
     });
 });
 // Route for super admin to view product details
-app.get('/sub-admin/orders/order/:order_id', (req, res) => {
+app.get('/sub-admin/orders/order/:order_id', async (req, res) => {
     const order_id = req.params.order_id;
 
     // View Product details by id
-    const sql = "SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type,product_name,product_price,description  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id where orders.id = ? ";
-
-    db.query(sql, [order_id], (err, data) => {
-        if (err) {
-            console.error('Error updating order status:', err);
-            res.status(500).json({ error: 'Internal server error' });
-            return;
-        }
-        // console.log(data);
-        res.json(data);
+    const sql = "SELECT orders.id, product.product_id , discount,user_id,order_date,status,payment_status,payment_type,product_name,product_price,description,quantity,sgst,cgst  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id where orders.id = ? ";
+    const productResults = await new Promise((resolve, reject) => {
+        db.query(sql, [order_id], (err, result) => {
+            if (err) {
+                console.error('Error retrieving data: ' + err.message);
+                reject(err);
+            } else {
+                // console.log('Data retrieved successfully');
+                resolve(result);
+            }
+        });
     });
+    console.log(productResults);
+    let total_amount = 0;
+    let total_discount = 0;
+    // if (productResults.length > 0) {
+    // const ProductPriceDetails = productResults.map((product) => {
+    //     return new Promise((resolve, reject) => {
+    //         if (err) {
+    //             console.error('Error retrieving data: ' + err.message);
+    //             reject(err);
+    //         } else {
+    //             // console.log('Data retrieved successfully');
+    //             total_amount = total_amount + product.product_price;
+    //             total_discount = total_discount + (product.product_price*(product.discount/100));
+
+    //         }
+    //     });
+    // });
+    // console.log(ProductPriceDetails)
+
+    // const images = await Promise.all(imagesPromises);
+    // console.log(images);
+    return res.json([productResults]);
+    // } else {
+    //     return res.json([]); // Return an empty response if no doctor details found
+    // }
+
+
 });
 app.get('/sub-admin/orders/customer/:customer_id', (req, res) => {
     const user_id = req.params.customer_id;
@@ -5670,7 +6205,7 @@ app.get("/sub-admin/see-doctor", async (req, res) => {
     if (req.session.user) {
         try {
             const user_id = req.session.user.id;
-            const query = 'SELECT * FROM doctors_details WHERE clinic_id = ?';
+            const query = 'SELECT doctors_details.id,doc_name,doc_desc,location,clinic,clinic_desc,clinic_id,type,doctor_imageId,specializes,Phone_number,type_of_visite,doctors_timetable.id as timetableId,weekly_day,starting_time,ending_time FROM doctors_details inner join doctors_timetable On doctors_details.id = doctors_timetable.doctor_id  WHERE  clinic_id = ?;';
             const doctorResults = await new Promise((resolve, reject) => {
                 db.query(query, user_id, (err, result) => {
                     if (err) {
@@ -5714,6 +6249,72 @@ app.get("/sub-admin/see-doctor", async (req, res) => {
     } else {
         return res.status(500).send("Data not found");
     }
+});
+// see particular  doctor details
+app.get("/viewdetails/doctor/:doctor_id", async (req, res) => {
+    try {
+        const doctor_id = req.params.doctor_id;
+        // const user_id = req.session.user.id;
+        const query = 'SELECT doctors_details.id,doc_name,doc_desc,location,clinic,clinic_desc,clinic_id,type,doctor_imageId,specializes,Phone_number,type_of_visite FROM doctors_details   WHERE  doctors_details.id = ?;';
+        const doctorResults = await new Promise((resolve, reject) => {
+            db.query(query, doctor_id, (err, result) => {
+                if (err) {
+                    console.error('Error retrieving data: ' + err.message);
+                    reject(err);
+                } else {
+                    // console.log('Data retrieved successfully');
+                    // console.log(result)
+                    resolve(result);
+                }
+            });
+        });
+
+        if (doctorResults.length > 0) {
+            const sql = `SELECT * FROM doctors_timetable WHERE doctor_id = ?`;
+
+            const timeTable = await new Promise((resolve, reject) => {
+                db.query(sql, doctor_id, (err, result) => {
+                    if (err) {
+                        console.error('Error retrieving data: ' + err.message);
+                        reject(err);
+                    } else {
+                        // console.log('Data retrieved successfully');
+                        // console.log(result)
+                        resolve(result);
+                    }
+                });
+            });
+
+            const imagesPromises = doctorResults.map((doctor) => {
+                return new Promise((resolve, reject) => {
+                    const sql = 'SELECT * FROM images WHERE id = ?';
+                    db.query(sql, [doctor.doctor_imageId], (err, result) => {
+                        if (err) {
+                            console.error('Database error: ' + err);
+                            reject(err);
+                        } else {
+                            // console.log(result[0]);
+                            resolve(result[0]);
+                        }
+                    });
+                });
+            });
+
+            const images = await Promise.all(imagesPromises);
+
+
+
+            // console.log([doctorResults, images,timeTable]);
+            return res.json([doctorResults, images, timeTable]);
+        } else {
+            // return res.json([]); // Return an empty response if no doctor details found
+            return res.json(null); // Return an empty response if no doctor details found
+        }
+    } catch (error) {
+        console.error('Error: ', error);
+        return res.status(500).json({ error: 'Error retrieving doctor details from the database' });
+    }
+
 });
 //  Show Laboratory Test
 app.get("/sub-admin/see-labtests", async (req, res) => {
@@ -6193,6 +6794,41 @@ app.post('/upload/banner', (req, res) => {
     }
 
 });
+app.post('/upload/prescription', (req, res) => {
+    // console.log('Upload')
+    try {
+        upload(req, res, (err) => {
+            if (err) {
+                console.error('Image upload error: ' + err);
+                res.status(500).json({ error: 'Image upload failed.' });
+            } else {
+                const { originalname, filename } = req.file;
+
+                const imageInfo = {
+                    name: originalname,
+                    path: `uploads/${filename}`,
+                };
+
+                const sql = 'INSERT INTO Prescription SET ?';
+
+                db.query(sql, imageInfo, (dbErr, result) => {
+                    if (dbErr) {
+                        console.error('Database error: ' + dbErr);
+                        res.status(500).json({ error: 'Database error.' });
+                    } else {
+                        lastInsertedImageId = (result.insertId);
+                        //   console.log(lastInsertedImageId);
+                        //   res.json({ message: 'Image uploaded successfully', result });
+                        res.json({ message: 'Image uploaded successfully', imageId: lastInsertedImageId }); // Send the image ID as a response
+                    }
+                });
+            }
+        });
+    } catch (error) {
+        console.log(error)
+    }
+
+});
 
 app.get('/images', (req, res) => {
     const sql = 'SELECT * FROM images where id = ?';
@@ -6206,8 +6842,22 @@ app.get('/images', (req, res) => {
         }
     });
 });
+
 app.get('/images/banner', (req, res) => {
     const sql = 'SELECT * FROM banner';
+
+    db.query(sql, [lastInsertedImageId], (err, result) => {
+        if (err) {
+            console.error('Database error: ' + err);
+            res.status(500).json({ error: 'Database error.' });
+        } else {
+            res.json(result);
+        }
+    });
+});
+
+app.get('/images/prescription', (req, res) => {
+    const sql = 'SELECT * FROM Prescription';
 
     db.query(sql, [lastInsertedImageId], (err, result) => {
         if (err) {
