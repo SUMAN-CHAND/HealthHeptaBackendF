@@ -34,7 +34,7 @@ router.post('/', (req, res) => {
 
   try {
     // Insert the product into the database
-    db.query('INSERT INTO B2B_product SET ?', product, (err, result) => {
+    db.query('INSERT INTO b2b_product SET ?', product, (err, result) => {
       if (err) {
         console.error('Error inserting product: ' + err.message);
         res.status(500).json({ error: 'Failed to add the product' });
@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
   // if (req.session.user) {
   try {
     // const user_id = req.session.user.id;
-    const query = " select * from B2B_product;";
+    const query = " select * from b2b_product;";
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {

@@ -23,7 +23,7 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id
         //This is for no of user in our platfrom
-        const sql = "SELECT COUNT(*) as no FROM User_Tbl;";
+        const sql = "SELECT COUNT(*) as no FROM user_tbl;";
 
         db.query(sql,   (err, data) => {
             if (err) {
@@ -41,13 +41,13 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
 
         //This is for no of user are joining with in this week in our platfrom
         // const user_id = req.session.user.id
-        const sql1 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
-        const sql2 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
-        const sql3 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
-        const sql4 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
-        const sql5 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
-        const sql6 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
-        const sql7 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
+        const sql1 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
+        const sql2 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
+        const sql3 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
+        const sql4 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
+        const sql5 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
+        const sql6 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
+        const sql7 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
 
         db.query(sql1, (err, data) => {
             if (err) {
@@ -103,13 +103,13 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
         // const user_id = req.session.user.id
         //This is for no of sales are complete  with in this week from our platfrom
 
-        const sql8 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 0 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
-        const sql9 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 1 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
-        const sql10 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 2 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
-        const sql11 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 3 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
-        const sql12 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 4 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
-        const sql13 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 5 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
-        const sql14 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 6 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
+        const sql8 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 0 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
+        const sql9 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 1 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
+        const sql10 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 2 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
+        const sql11 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 3 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
+        const sql12 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 4 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
+        const sql13 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 5 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
+        const sql14 = "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL + 6 DAY) and payments.payment_status = 'complete' and  order_sub_admin.sub_admin_id = ?";
         db.query(sql8, [user_id], (err, data) => {
             if (err) {
                 console.log(err)
@@ -164,13 +164,13 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
         // const user_id = req.session.user.id
         //This is for no of Purchase are complete with in this week from our platfrom
 
-        const sql15 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +0 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
-        const sql16 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +1 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
-        const sql17 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +2 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
-        const sql18 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +3 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
-        const sql19 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +4 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
-        const sql20 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +5 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";;
-        const sql21 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +6 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
+        const sql15 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +0 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
+        const sql16 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +1 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
+        const sql17 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +2 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
+        const sql18 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +3 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
+        const sql19 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +4 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
+        const sql20 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +5 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";;
+        const sql21 = "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id   where orders.order_date = DATE_SUB(CURDATE(), INTERVAL +6 DAY) and payments.payment_status = 'pending' and  order_sub_admin.sub_admin_id = ?;";
 
         db.query(sql15, [user_id], (err, data) => {
             if (err) {
@@ -367,7 +367,7 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
         })
 
         //This is for total no of Orders  from HealthHepta
-        const sql31 = "SELECT COUNT(*) as no FROM orders INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?;";
+        const sql31 = "SELECT COUNT(*) as no FROM orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?;";
 
 
         db.query(sql31, [user_id],   (err, data) => {
@@ -401,13 +401,13 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
             }
         })
         //This is for total Orders  with in a week
-        const sql32 = "select COUNT(*) as no from Orders  INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
-        const sql33 = "select COUNT(*) as no from Orders INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
-        const sql34 = "select COUNT(*) as no from Orders INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
-        const sql35 = "select COUNT(*) as no from Orders INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
-        const sql36 = "select COUNT(*) as no from Orders INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
-        const sql37 = "select COUNT(*) as no from Orders INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
-        const sql38 = "select COUNT(*) as no from Orders INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
+        const sql32 = "select COUNT(*) as no from Orders  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
+        const sql33 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
+        const sql34 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
+        const sql35 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
+        const sql36 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
+        const sql37 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
+        const sql38 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
 
         db.query(sql32, (err, data) => {
             if (err) {
