@@ -61,7 +61,7 @@ const { error } = require('console')
 
 
 app.use(cors({
-    origin: ["http://localhost:3000"],
+    origin: ["http://www.healthhepta.com/"],
     methods: ['POST', 'PUT', 'GET', 'PATCH', 'DELETE'],
     credentials: true,
     allowedHeaders: "Origin, X-Api-Key, X-Requested-With, Content-Type, Accept, Authorization"
@@ -75,9 +75,20 @@ const oneDay = 1000 * 60 * 60 * 24;
 // const io = socketIo(server);
 app.use(session({
     secret: '1234567890abcdefghijklmnopqrstuvwxyz',
-    resave: true,
+    // resave: true,
     saveUninitialized: true,
-    // cookie: { secure: false, maxAge: oneDay }
+    resave: false,
+    proxy: true,
+    cookie: {
+        httpOnly: true,
+        
+    }
+    // cookie: { secure: true, maxAge: oneDay }
+    // cookie: {
+    //     secure: false,
+    //     maxAge: oneDay,
+    //     sameSite: 'strict' // Or 'lax' if needed
+    // }
 }));
 
 
@@ -1761,7 +1772,7 @@ app.post('/search', async (req, res) => {
 
             MedicineShopsImage = await Promise.all(imagesPromises);
         }
-        console.log([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages,MedicineShops,MedicineShopsImage]);
+        console.log([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages, MedicineShops, MedicineShopsImage]);
         // return res.json([productResults, images]);
 
         return res.json([productResults, images, LabResults, LabTestimages, DoctorResults, Doctorimages, MedicineShops, MedicineShopsImage]);
@@ -1929,7 +1940,7 @@ app.get('/profile-details', (req, res) => {
         var address = [];
         if (user.role === 'customer' || user.role === 'admin') {
             const sql = "select * from address where user_id = ?";
-            const sql1 = "Select COUNT(`cart_id`) AS namesCount from CartTable where user_id = ?";
+            const sql1 = "Select COUNT(`cart_id`) AS namesCount from carttable where user_id = ?";
             db.query(sql, [user_id], (err, data) => {
                 if (err) {
                     return res.json(err);
@@ -5846,9 +5857,9 @@ app.get('/medicineshop/products/:id', async (req, res) => {
     const query = " select * from product  INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id where sub_admin_id = ? ";
     const query1 = " SELECT * FROM hh_dev_db.sub_admin where id = ?;";
     try {
-        
+
         const medicineShop = await new Promise((resolve, reject) => {
-            db.query(query1,[id], (err, result) => {
+            db.query(query1, [id], (err, result) => {
                 if (err) {
                     console.error('Error retrieving data: ' + err.message);
                     reject(err);
@@ -5858,9 +5869,9 @@ app.get('/medicineshop/products/:id', async (req, res) => {
                 }
             });
         });
-        let medicineShopimages ;
+        let medicineShopimages;
 
-        if(medicineShop.length > 0){
+        if (medicineShop.length > 0) {
             const imagesPromises = medicineShop.map((mshop) => {
                 return new Promise((resolve, reject) => {
                     const sql = 'SELECT * FROM images WHERE id = ?';
@@ -5875,11 +5886,11 @@ app.get('/medicineshop/products/:id', async (req, res) => {
                     });
                 });
             });
-         medicineShopimages = await Promise.all(imagesPromises);
+            medicineShopimages = await Promise.all(imagesPromises);
 
         }
         const productResults = await new Promise((resolve, reject) => {
-            db.query(query,[id], (err, result) => {
+            db.query(query, [id], (err, result) => {
                 if (err) {
                     console.error('Error retrieving data: ' + err.message);
                     reject(err);
@@ -5910,7 +5921,7 @@ app.get('/medicineshop/products/:id', async (req, res) => {
 
             const images = await Promise.all(imagesPromises);
             // console.log(images);
-            return res.json([productResults, images,medicineShop,medicineShopimages]);
+            return res.json([productResults, images, medicineShop, medicineShopimages]);
         } else {
             return res.json([]); // Return an empty response if no doctor details found
         }
