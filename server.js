@@ -479,6 +479,68 @@ app.post('/labsearch', async (req, res) => {
 
 
 });
+//Search Labs in Modal
+app.post('/clinic-test', async (req, res) => {
+    //   const { name, specialist, clinic, pincode } = req.query;
+    const likefiled = req.body.input;
+    console.log(req.body)
+    const input = `%${likefiled}%`
+
+    try {
+
+
+        const query = `
+        SELECT sub_admin.id,name,Landmark,SubAdminImageId,address.pin  from sub_admin
+        INNER JOIN address_sub_admin ON address_sub_admin.sub_admin_id = sub_admin.id 
+        INNER JOIN sub_admin_details ON sub_admin_details.sub_admin_id = sub_admin.id 
+        INNER JOIN address ON address_sub_admin.sub_admin_id = address.address_id   
+        where name Like ?
+        Or Landmark Like ?
+        and role = 'Clinic'
+        and permission = 'Approve';`;
+
+        const clinicResult = await new Promise((resolve, reject) => {
+            db.query(query, [input, input], (err, results) => {
+                if (err) {
+                    console.error(err);
+                    res.status(500).send({ message: 'Error searching for doctors' });
+                } else {
+                    // console.log(results)
+                    resolve(results);
+                }
+            });
+
+        });
+
+        if (clinicResult.length > 0) {
+            const imagesPromises = clinicResult.map((clinic) => {
+                return new Promise((resolve, reject) => {
+                    const sql = 'SELECT * FROM images WHERE id = ?';
+                    db.query(sql, [clinic.SubAdminImageId], (err, result) => {
+                        if (err) {
+                            console.error('Database error: ' + err);
+                            reject(err);
+                        } else {
+                            // console.log(result[0]);
+                            resolve(result[0]);
+                        }
+                    });
+                });
+            });
+
+            const images = await Promise.all(imagesPromises);
+            // console.log(clinicResult, images);
+            return res.json([clinicResult, images]);
+        } else {
+            return res.json([]); // Return an empty response if no doctor details found
+        }
+    } catch (error) {
+        console.error('Error: ', error);
+        return res.status(500).json({ error: 'Error retrieving Doctor details from the database' });
+    }
+
+
+});
 
 //search doctor by chose specializes
 
@@ -1790,7 +1852,7 @@ app.post('/superadmin/signup', async (req, res) => {
     })
 })
 app.post('/login', async (req, res) => {
-    const sql = "Select * from User_Tbl where `phone` = ?";
+    const sql = "select * from user_tbl where `phone` = ?";
 
     db.query(sql, [req.body.phone], (err, data) => {
         if (err) {
@@ -1866,7 +1928,7 @@ app.get('/profile-details', (req, res) => {
         // console.log(user)
         var address = [];
         if (user.role === 'customer' || user.role === 'admin') {
-            const sql = "Select * from address where user_id = ?";
+            const sql = "select * from address where user_id = ?";
             const sql1 = "Select COUNT(`cart_id`) AS namesCount from CartTable where user_id = ?";
             db.query(sql, [user_id], (err, data) => {
                 if (err) {
@@ -4927,8 +4989,8 @@ app.get('/superadmin/subadmin/orders/:user_id', (req, res) => {
 //Sub Admin
 
 app.post('/sub-admin/signup', async (req, res) => {
-    const sql = "Insert into Sub_Admin (`name`,`phone`,`password`,`permission`,`role`) values(?)";
-    const sql2 = "select * from Sub_Admin where `phone` = ?";
+    const sql = "Insert into sub_admin (`name`,`phone`,`password`,`permission`,`role`) values(?)";
+    const sql2 = "select * from sub_admin where `phone` = ?";
     const password = req.body.password;
     // console.log(req.body)
     bcrypt.hash(password.toString(), salt, (err, hash) => {
@@ -4973,7 +5035,7 @@ app.post('/sub_admin/complete_profile', async (req, res) => {
 
 
         // const sql = "Insert into Sub_Admin (`LicenceImageId`,`SubAdminImageId`) values(?) where id = ?;";
-        const sql = "UPDATE Sub_Admin SET LicenceImageId = ?, SubAdminImageId= ? WHERE id = ?;";
+        const sql = "UPDATE sub_admin SET LicenceImageId = ?, SubAdminImageId= ? WHERE id = ?;";
         // const values = [
         //     req.body.LicenceImageId,
         //     req.body.SubAdminImageId
@@ -5036,7 +5098,7 @@ app.post('/sub_admin/complete_profile', async (req, res) => {
             createdAt
         ]
         const insertSubAdminDetails = await new Promise((resolve, reject) => {
-            const sql = "insert into Sub_admin_Details (sub_admin_id,Landmark,OpeningTime,CloseingTime,Reg_id,description,createdAt)values(?);";
+            const sql = "insert into sub_admin_details (sub_admin_id,Landmark,OpeningTime,CloseingTime,Reg_id,description,createdAt)values(?);";
             db.query(sql, [sub_admin_details], (err, result) => {
                 if (err) {
                     console.log(err)
@@ -5102,7 +5164,7 @@ app.post('/sub_admin/complete_profile', async (req, res) => {
 
 
 app.post('/sub-admin/login', (req, res) => {
-    const sql = "Select * from Sub_Admin where `phone` = ? ";
+    const sql = "Select * from sub_admin where `phone` = ? ";
 
     db.query(sql, [req.body.phone], (err, data) => {
         if (err) {
