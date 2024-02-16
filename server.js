@@ -82,7 +82,9 @@ app.use(session({
     proxy: true,
     cookie: {
         httpOnly: true,
-        
+        sameSite: "none",
+        secure: true,
+
     }
     // cookie: { secure: true, maxAge: oneDay }
     // cookie: {
@@ -899,7 +901,7 @@ app.post('/doctorbook', async (req, res) => {
                             const Phone_number = `+91${data[0].Phone_number}`;
                             //    console.log(Phone_number)
                             // console.log(req.body)
-                            const sql = `INSERT INTO AppointmentTable (doctor_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,AppointmentStatus,role,type_of_visite) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','customer',?)`;
+                            const sql = `INSERT INTO appointmenttable (doctor_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,AppointmentStatus,role,type_of_visite) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','customer',?)`;
                             try {
                                 db.query(sql, [doctor_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id, type_of_visite], async (err, data) => {
                                     if (err) {
@@ -936,7 +938,7 @@ app.post('/doctorbook', async (req, res) => {
 
                 const { doctor_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id, type_of_visite } = req.body;
                 // console.log(req.body)
-                const sql = `INSERT INTO AppointmentTable (doctor_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,AppointmentStatus,role,type_of_visite) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','partner',?)`;
+                const sql = `INSERT INTO appointmenttable (doctor_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,AppointmentStatus,role,type_of_visite) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','partner',?)`;
 
                 try {
                     const appoimentBook = await new Promise((resolve, reject) => {
@@ -1225,7 +1227,7 @@ app.post('/reschedule/:appoiment_id', async (req, res) => {
     const appoint_time = req.body.appoint_time;
     // UPDATE booking SET appoint_date = "2023-10-21", appoint_time = "11:25 AM" WHERE ph_number = 6290232268;
 
-    const sql = `UPDATE AppointmentTable SET appoint_date_re = ?, appoint_time_re = ? , AppointmentStatus = ? WHERE id = ?`;
+    const sql = `UPDATE appointmenttable SET appoint_date_re = ?, appoint_time_re = ? , AppointmentStatus = ? WHERE id = ?`;
     try {
         db.query(sql, [appoint_date, appoint_time, 'request_reschedule', appoiment_id], (err, data) => {
             if (err) {
@@ -1289,7 +1291,7 @@ app.post('/sub-admin/reschedule/:appoiment_id', async (req, res) => {
     const appoint_time = req.body.appoint_time;
     // UPDATE booking SET appoint_date = "2023-10-21", appoint_time = "11:25 AM" WHERE ph_number = 6290232268;
 
-    const sql = `UPDATE AppointmentTable SET appoint_date = ?, appoint_time = ? , AppointmentStatus = ? WHERE id = ?`;
+    const sql = `UPDATE appointmenttable SET appoint_date = ?, appoint_time = ? , AppointmentStatus = ? WHERE id = ?`;
     try {
         db.query(sql, [appoint_date, appoint_time, 'reschedule', appoiment_id], (err, data) => {
             if (err) {
@@ -1321,7 +1323,7 @@ app.post('/sub-admin/reschedule/see/:appoiment_id', async (req, res) => {
 
     // UPDATE booking SET appoint_date = "2023-10-21", appoint_time = "11:25 AM" WHERE ph_number = 6290232268;
 
-    const sql = `UPDATE AppointmentTable SET appoint_date = ?, appoint_time = ?, AppointmentStatus = ? WHERE id = ?`;
+    const sql = `UPDATE appointmenttable SET appoint_date = ?, appoint_time = ?, AppointmentStatus = ? WHERE id = ?`;
     try {
         db.query(sql, [appoint_date, appoint_time, 'reschedule', appoiment_id], (err, data) => {
             if (err) {
@@ -1383,7 +1385,7 @@ app.get('/sub-admin/reschedule/see/:appoiment_id', async (req, res) => {
 
     // UPDATE booking SET appoint_date = "2023-10-21", appoint_time = "11:25 AM" WHERE ph_number = 6290232268;
 
-    const sql = `select * from AppointmentTable WHERE id = ?`;
+    const sql = `select * from appointmenttable WHERE id = ?`;
     try {
         db.query(sql, [appoiment_id], (err, data) => {
             if (err) {
@@ -1444,7 +1446,7 @@ app.post('/sub-admin/reschedule/status/:appoiment_id', async (req, res) => {
     // const { doctor_id, appoint_date, appoint_time } = req.body;
     // UPDATE booking SET appoint_date = "2023-10-21", appoint_time = "11:25 AM" WHERE ph_number = 6290232268;
 
-    const sql = `UPDATE AppointmentTable SET AppointmentStatus = ? WHERE id = ?`;
+    const sql = `UPDATE appointmenttable SET AppointmentStatus = ? WHERE id = ?`;
     try {
         db.query(sql, [AppointmentStatus, appoiment_id], (err, data) => {
             if (err) {
@@ -6515,7 +6517,7 @@ app.get('/sub-admin/see-appoiment', (req, res) => {
         const user_id = req.session.user.id
 
         const clinic_id = user_id;
-        const sql = "Select AppointmentTable.id,doctor_id,appoint_date,name,appoint_time,clinic,location,doc_desc,doc_name,AppointmentTable.ph_number,user_id,AppointmentTable.clinic_id,AppointmentTable.type_of_visite,ph_number,clinic_desc ,AppointmentStatus from AppointmentTable INNER JOIN doctors_details ON AppointmentTable.doctor_id = doctors_details.id  where AppointmentTable.clinic_id = ?;";
+        const sql = "Select appointmenttable.id,doctor_id,appoint_date,name,appoint_time,clinic,location,doc_desc,doc_name,appointmenttable.ph_number,user_id,appointmenttable.clinic_id,appointmenttable.type_of_visite,ph_number,clinic_desc ,AppointmentStatus from appointmenttable INNER JOIN doctors_details ON appointmenttable.doctor_id = doctors_details.id  where appointmenttable.clinic_id = ?;";
         db.query(sql, [clinic_id], (err, data) => {
             if (err) {
                 return res.json("Error");
@@ -6562,7 +6564,7 @@ app.get('/user/see-appoiment', (req, res) => {
         const user_id = req.session.user.id
         // console.log(user_id)
         // const clinic_id = user_id;
-        const sql = "Select AppointmentTable.id,doctor_id,appoint_date,specializes,name,appoint_time,clinic,location,doc_desc,doc_name,Phone_number,AppointmentTable.type_of_visite,user_id,AppointmentTable.clinic_id,ph_number,clinic_desc ,AppointmentStatus from AppointmentTable INNER JOIN doctors_details ON AppointmentTable.doctor_id = doctors_details.id  where AppointmentTable.user_id = ?;";
+        const sql = "Select appointmenttable.id,doctor_id,appoint_date,specializes,name,appoint_time,clinic,location,doc_desc,doc_name,Phone_number,appointmenttable.type_of_visite,user_id,appointmenttable.clinic_id,ph_number,clinic_desc ,AppointmentStatus from appointmenttable INNER JOIN doctors_details ON appointmenttable.doctor_id = doctors_details.id  where appointmenttable.user_id = ?;";
         db.query(sql, [user_id], (err, data) => {
             if (err) {
                 console.log(err)
@@ -6585,7 +6587,7 @@ app.get('/user/see-appoiment/:id', async (req, res) => {
     if (req.session.user) {
         // const user_id = req.session.user.id
         const appoiment_id = req.params.id;
-        const query = "Select AppointmentTable.id,doctor_id,appoint_date,specializes,name,appoint_time,clinic,location,doc_desc,doc_name,doctor_imageId,Phone_number,AppointmentTable.type_of_visite,user_id,AppointmentTable.clinic_id,ph_number,clinic_desc ,AppointmentStatus from AppointmentTable INNER JOIN doctors_details ON AppointmentTable.doctor_id = doctors_details.id  where AppointmentTable.id = ?;";
+        const query = "Select appointmenttable.id,doctor_id,appoint_date,specializes,name,appoint_time,clinic,location,doc_desc,doc_name,doctor_imageId,Phone_number,appointmenttable.type_of_visite,user_id,appointmenttable.clinic_id,ph_number,clinic_desc ,AppointmentStatus from appointmenttable INNER JOIN doctors_details ON appointmenttable.doctor_id = doctors_details.id  where appointmenttable.id = ?;";
         const appoimentResults = await new Promise((resolve, reject) => {
             db.query(query, appoiment_id, (err, result) => {
                 if (err) {
@@ -6724,7 +6726,7 @@ app.get('/superadmin/appoiments', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id
 
-        const sql = "Select * from AppointmentTable ";
+        const sql = "Select * from appointmenttable ";
         db.query(sql, (err, data) => {
             if (err) {
                 return res.json("Error");
