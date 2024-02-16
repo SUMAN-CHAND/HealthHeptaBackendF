@@ -65,7 +65,7 @@ app.use(cors({
     // origin: ["http://localhost:3000"],
     methods: ['POST', 'PUT', 'GET', 'PATCH', 'DELETE'],
     credentials: true,
-    allowedHeaders: "Origin, X-Api-Key, X-Requested-With, Content-Type, Accept, Authorization"
+    allowedHeaders: "origin, X-Api-Key, X-Requested-With, Content-Type, Accept, Authorization"
 
 }));
 app.use(cookieParser());
@@ -77,14 +77,12 @@ const oneDay = 1000 * 60 * 60 * 24;
 app.use(session({
     secret: '1234567890abcdefghijklmnopqrstuvwxyz',
     // resave: true,
-    saveUninitialized: true,
     resave: false,
+    saveUninitialized: true,
     proxy: true,
     cookie: {
         httpOnly: true,
-        sameSite: "none",
-        secure: true,
-
+        sameSite: 'None', // For cross-site requests
     }
     // cookie: { secure: true, maxAge: oneDay }
     // cookie: {
