@@ -62,6 +62,7 @@ const { error } = require('console')
 
 app.use(cors({
     origin: ["http://www.healthhepta.com/"],
+    // origin: ["http://localhost:3000"],
     methods: ['POST', 'PUT', 'GET', 'PATCH', 'DELETE'],
     credentials: true,
     allowedHeaders: "Origin, X-Api-Key, X-Requested-With, Content-Type, Accept, Authorization"
@@ -1787,8 +1788,8 @@ app.post('/search', async (req, res) => {
 });
 
 app.post('/signup', async (req, res) => {
-    const sql = "Insert into User_Tbl (`name`,`phone`,`password`,`createdAt`,`role`) values(?)";
-    const sql2 = "select * from User_Tbl where `phone` = ?";
+    const sql = "Insert into user_tbl (`name`,`phone`,`password`,`createdAt`,`role`) values(?)";
+    const sql2 = "select * from user_tbl where `phone` = ?";
     const date = new Date().toISOString().split('T')[0];
     const password = req.body.password;
     bcrypt.hash(password.toString(), salt, (err, hash) => {
@@ -1826,8 +1827,8 @@ app.post('/signup', async (req, res) => {
     })
 })
 app.post('/superadmin/signup', async (req, res) => {
-    const sql = "Insert into User_Tbl (`name`,`phone`,`password`,`role`) values(?)";
-    const sql2 = "select * from User_Tbl where `phone` = ?";
+    const sql = "Insert into user_tbl (`name`,`phone`,`password`,`role`) values(?)";
+    const sql2 = "select * from user_tbl where `phone` = ?";
     const password = req.body.password;
     bcrypt.hash(password.toString(), salt, (err, hash) => {
         if (err) {
@@ -1898,7 +1899,7 @@ app.post('/login', async (req, res) => {
     })
 })
 app.post('/superadmin/login', (req, res) => {
-    const sql = "Select * from User_Tbl where `phone` = ? and `role` = 'admin'";
+    const sql = "Select * from user_tbl where `phone` = ? and `role` = 'admin'";
 
     db.query(sql, [req.body.phone], (err, data) => {
         if (err) {
@@ -2034,8 +2035,8 @@ app.get('/profile', async (req, res) => {
         const user = req.session.user;
         // console.log(user)
         if (user.role === 'customer') {
-            const sql = "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM User_Tbl INNER JOIN address ON User_Tbl.id = address.user_id and User_Tbl.id = ?;";
-            const sql1 = "SELECT  id ,name ,phone  FROM User_Tbl where User_Tbl.id = ?;";
+            const sql = "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ?;";
+            const sql1 = "SELECT  id ,name ,phone  FROM user_tbl where user_tbl.id = ?;";
 
             db.query(sql, [user_id], (err, data) => {
                 if (err) {
@@ -2062,7 +2063,7 @@ app.get('/profile', async (req, res) => {
         }
         else {
             const sql = "SELECT  b2c_partner.id ,name ,ph_num ,address_partner.address_id ,Village ,P_O,City,district,State,Pin  FROM address_partner INNER JOIN address ON address_partner.address_id = address.address_id  INNER JOIN b2c_partner ON b2c_partner.id = address_partner.partner_id and b2c_partner.id = ?;";
-            // const sql1 = "SELECT  id ,name ,phone  FROM User_Tbl where User_Tbl.id = ?;";
+            // const sql1 = "SELECT  id ,name ,phone  FROM user_tbl where user_tbl.id = ?;";
 
             db.query(sql, [user_id], (err, data) => {
                 if (err) {
@@ -2687,8 +2688,8 @@ app.get('/orders', (req, res) => {
         const user = req.session.user;
         // console.log(user)
         if (user.role === 'customer') {
-            const sql1 = "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN User_Tbl ON cartTable.user_id = User_Tbl.id AND cartTable.user_id = ?;";
-            const sql2 = "SELECT  product.product_id FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN User_Tbl ON cartTable.user_id = User_Tbl.id AND cartTable.user_id = ?;";
+            const sql1 = "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN user_tbl ON cartTable.user_id = user_tbl.id AND cartTable.user_id = ?;";
+            const sql2 = "SELECT  product.product_id FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN user_tbl ON cartTable.user_id = user_tbl.id AND cartTable.user_id = ?;";
             // db.query(sql2, [user_id], (err, data) => {
             //     if (err) {
             //         return res.json(err);
@@ -2713,8 +2714,8 @@ app.get('/orders', (req, res) => {
                 }
             })
         } else {
-            const sql1 = "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN User_Tbl ON cartTable.user_id = User_Tbl.id AND cartTable.user_id = ?;";
-            const sql2 = "SELECT  product.product_id FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN User_Tbl ON cartTable.user_id = User_Tbl.id AND cartTable.user_id = ?;";
+            const sql1 = "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN user_tbl ON cartTable.user_id = user_tbl.id AND cartTable.user_id = ?;";
+            const sql2 = "SELECT  product.product_id FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN user_tbl ON cartTable.user_id = user_tbl.id AND cartTable.user_id = ?;";
             // db.query(sql2, [user_id], (err, data) => {
             //     if (err) {
             //         return res.json(err);
@@ -3504,7 +3505,7 @@ app.patch('/profile', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id;
         const phone = req.body.phone;
-        const sql1 = "UPDATE User_Tbl SET `phone` = ? WHERE id = ?;";
+        const sql1 = "UPDATE user_tbl SET `phone` = ? WHERE id = ?;";
         // req.session.user
         db.query(sql1, [phone, user_id], (err, data) => {
             if (err) {
@@ -3519,7 +3520,7 @@ app.patch('/profile', (req, res) => {
 })
 app.patch('/profile/phone', async (req, res) => {
     if (req.session.user) {
-        const sql = "UPDATE User_Tbl SET `phone` = ? WHERE id = ?;";
+        const sql = "UPDATE user_tbl SET `phone` = ? WHERE id = ?;";
         const user_id = req.session.user.id;
         // var user_id = 2;
         const values = [
@@ -3817,7 +3818,7 @@ app.post('/superadmin/generate-coupon', (req, res) => {
 app.get('/superadmin/userno', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id
-        const sql1 = "SELECT COUNT(*) as no FROM User_Tbl;";
+        const sql1 = "SELECT COUNT(*) as no FROM user_tbl;";
 
         db.query(sql1, (err, data) => {
             if (err) {
@@ -3840,13 +3841,13 @@ var UserCount = [];
 app.get('/superadmin/userno/week', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id
-        const sql1 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
-        const sql2 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
-        const sql3 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
-        const sql4 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
-        const sql5 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
-        const sql6 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
-        const sql7 = "select COUNT(*) as no from User_Tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
+        const sql1 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
+        const sql2 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
+        const sql3 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
+        const sql4 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
+        const sql5 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
+        const sql6 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
+        const sql7 = "select COUNT(*) as no from user_tbl where  createdAt = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
 
         db.query(sql1, (err, data) => {
             if (err) {
@@ -4384,7 +4385,7 @@ app.get('/superadmin/orders', (req, res) => {
 app.get('/superadmin/user', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id
-        const sql1 = " select * from User_Tbl;";
+        const sql1 = " select * from user_tbl;";
 
 
         db.query(sql1, (err, data) => {
@@ -4872,8 +4873,8 @@ app.get('/superadmin/orders/order/:order_id', (req, res) => {
 app.get('/superadmin/orders/customer/:customer_id', (req, res) => {
     const user_id = req.params.customer_id;
 
-    const sql = "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM User_Tbl INNER JOIN address ON User_Tbl.id = address.user_id and User_Tbl.id = ?;";
-    const sql1 = "SELECT  id ,name ,phone  FROM User_Tbl where User_Tbl.id = ?;";
+    const sql = "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ?;";
+    const sql1 = "SELECT  id ,name ,phone  FROM user_tbl where user_tbl.id = ?;";
 
     db.query(sql, [user_id], (err, data) => {
         if (err) {
@@ -6122,8 +6123,8 @@ app.get('/sub-admin/orders/order/:order_id', async (req, res) => {
 app.get('/sub-admin/orders/customer/:customer_id', (req, res) => {
     const user_id = req.params.customer_id;
 
-    const sql = "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM User_Tbl INNER JOIN address ON User_Tbl.id = address.user_id and User_Tbl.id = ?;";
-    const sql1 = "SELECT  id ,name ,phone  FROM User_Tbl where User_Tbl.id = ?;";
+    const sql = "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ?;";
+    const sql1 = "SELECT  id ,name ,phone  FROM user_tbl where user_tbl.id = ?;";
 
     db.query(sql, [user_id], (err, data) => {
         if (err) {
