@@ -1984,7 +1984,7 @@ app.get('/profile-details', (req, res) => {
         } else {
             // console.log('else')
             const sql = "SELECT  b2c_partner.id ,name ,ph_num ,address_partner.address_id ,Village ,P_O,City,district,State,Pin  FROM address_partner INNER JOIN address ON address_partner.address_id = address.address_id  INNER JOIN b2c_partner ON b2c_partner.id = address_partner.partner_id and b2c_partner.id = ?;";
-            const sql1 = "Select COUNT(`cart_id`) AS namesCount from CartTable where user_id = ?";
+            const sql1 = "Select COUNT(`cart_id`) AS namesCount from carttable where user_id = ?";
             db.query(sql, [user_id], (err, data) => {
                 if (err) {
                     return res.json(err);
@@ -2444,7 +2444,7 @@ app.get('/cart', async (req, res) => {
         if (user.role === 'customer' || user.role === 'admin') {
             try {
                 // const user_id = req.session.user.id;
-                const query = "SELECT product.product_id, product_name , description,product_price , cart_id,discount,quantity, DrugOrNot , sgst,cgst,productImageId FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ?;";
+                const query = "SELECT product.product_id, product_name , description,product_price , cart_id,discount,quantity, DrugOrNot , sgst,cgst,productImageId FROM product INNER JOIN carttable ON product.product_id = carttable.product_id AND carttable.user_id = ?;";
                 const productResults = await new Promise((resolve, reject) => {
                     db.query(query, [user_id], (err, result) => {
                         if (err) {
@@ -2489,7 +2489,7 @@ app.get('/cart', async (req, res) => {
 
             try {
                 // const user_id = req.session.user.id;
-                const query = "SELECT  product_name , product_price ,description, cart_id,discount,quantity, DrugOrNot , sgst,cgst,productImageId FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ? and cartTable.role = 'partner'";
+                const query = "SELECT  product_name , product_price ,description, cart_id,discount,quantity, DrugOrNot , sgst,cgst,productImageId FROM product INNER JOIN carttable ON product.product_id = carttable.product_id AND carttable.user_id = ? and carttable.role = 'partner'";
                 const productResults = await new Promise((resolve, reject) => {
                     db.query(query, [user_id], (err, result) => {
                         if (err) {
@@ -2540,7 +2540,7 @@ app.get('/cart', async (req, res) => {
 app.get('/cart/drug', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id
-        const sql1 = "SELECT COUNT(*) as no FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ? where product.DrugOrNot = 'drug';";
+        const sql1 = "SELECT COUNT(*) as no FROM product INNER JOIN carttable ON product.product_id = carttable.product_id AND carttable.user_id = ? where product.DrugOrNot = 'drug';";
 
         db.query(sql1, [user_id], (err, data) => {
             if (err) {
@@ -2611,7 +2611,7 @@ app.get('/addtocart/:product_id', async (req, res) => {
 //         const product_id = req.params.product_id;
 //         const user_id = req.session.user.id;
 
-//         const sql = "insert into CartTable(`product_id`,`user_id`) values (?,?);";
+//         const sql = "insert into carttable(`product_id`,`user_id`) values (?,?);";
 //         db.query(sql, [product_id, user_id], (err, data) => {
 //             if (err) {
 //                 return res.json("Error");
@@ -2637,7 +2637,7 @@ app.post('/addtocart/:product_id/:quantity', (req, res) => {
 
             ]
 
-            const sql = "insert into cartTable (`product_id`,`quantity`,`user_id`,`role`) values (?);";
+            const sql = "insert into carttable (`product_id`,`quantity`,`user_id`,`role`) values (?);";
             db.query(sql, [value], (err, data) => {
                 if (err) {
                     console.log(err)
@@ -2656,7 +2656,7 @@ app.post('/addtocart/:product_id/:quantity', (req, res) => {
 
             ]
 
-            const sql = "insert into cartTable (`product_id`,`quantity`,`user_id`,`role`) values (?);";
+            const sql = "insert into carttable (`product_id`,`quantity`,`user_id`,`role`) values (?);";
             db.query(sql, [value], (err, data) => {
                 if (err) {
                     console.log(err)
@@ -2679,8 +2679,8 @@ app.get('/orders', (req, res) => {
         const user = req.session.user;
         // console.log(user)
         if (user.role === 'customer') {
-            const sql1 = "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN user_tbl ON cartTable.user_id = user_tbl.id AND cartTable.user_id = ?;";
-            const sql2 = "SELECT  product.product_id FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN user_tbl ON cartTable.user_id = user_tbl.id AND cartTable.user_id = ?;";
+            const sql1 = "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN carttable ON product.product_id = carttable.product_id JOIN user_tbl ON carttable.user_id = user_tbl.id AND carttable.user_id = ?;";
+            const sql2 = "SELECT  product.product_id FROM product INNER JOIN carttable ON product.product_id = carttable.product_id JOIN user_tbl ON carttable.user_id = user_tbl.id AND carttable.user_id = ?;";
             // db.query(sql2, [user_id], (err, data) => {
             //     if (err) {
             //         return res.json(err);
@@ -2705,8 +2705,8 @@ app.get('/orders', (req, res) => {
                 }
             })
         } else {
-            const sql1 = "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN user_tbl ON cartTable.user_id = user_tbl.id AND cartTable.user_id = ?;";
-            const sql2 = "SELECT  product.product_id FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id JOIN user_tbl ON cartTable.user_id = user_tbl.id AND cartTable.user_id = ?;";
+            const sql1 = "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN carttable ON product.product_id = carttable.product_id JOIN user_tbl ON carttable.user_id = user_tbl.id AND carttable.user_id = ?;";
+            const sql2 = "SELECT  product.product_id FROM product INNER JOIN carttable ON product.product_id = carttable.product_id JOIN user_tbl ON carttable.user_id = user_tbl.id AND carttable.user_id = ?;";
             // db.query(sql2, [user_id], (err, data) => {
             //     if (err) {
             //         return res.json(err);
@@ -2869,7 +2869,7 @@ app.post('/orders', async (req, res) => {
 
                 // Get the product IDs and quantities from the user's cart
                 const productInfo = await new Promise((resolve, reject) => {
-                    const sql1 = "SELECT product.product_id, cartTable.quantity FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ?;";
+                    const sql1 = "SELECT product.product_id, carttable.quantity FROM product INNER JOIN carttable ON product.product_id = carttable.product_id AND carttable.user_id = ?;";
                     db.query(sql1, [user_id], (err, rows) => {
                         if (err) {
                             reject(err);
@@ -2970,7 +2970,7 @@ app.post('/orders', async (req, res) => {
 
                 const deleteCartItems = await Promise.all(productInfo.map(product => {
                     const { product_id, quantity } = product;
-                    const sql5 = "DELETE FROM cartTable WHERE user_id = ? AND product_id = ?;";
+                    const sql5 = "DELETE FROM carttable WHERE user_id = ? AND product_id = ?;";
                     return new Promise((resolve, reject) => {
                         db.query(sql5, [user_id, product_id], (err, result) => {
                             if (err) {
@@ -3044,7 +3044,7 @@ app.post('/orders', async (req, res) => {
 
                 // Get the product IDs and quantities from the user's cart
                 const productInfo = await new Promise((resolve, reject) => {
-                    const sql1 = "SELECT product.product_id, cartTable.quantity FROM product INNER JOIN cartTable ON product.product_id = cartTable.product_id AND cartTable.user_id = ?;";
+                    const sql1 = "SELECT product.product_id, carttable.quantity FROM product INNER JOIN carttable ON product.product_id = carttable.product_id AND carttable.user_id = ?;";
                     db.query(sql1, [user_id], (err, rows) => {
                         if (err) {
                             reject(err);
@@ -3145,7 +3145,7 @@ app.post('/orders', async (req, res) => {
 
                 const deleteCartItems = await Promise.all(productInfo.map(product => {
                     const { product_id, quantity } = product;
-                    const sql5 = "DELETE FROM cartTable WHERE user_id = ? AND product_id = ?;";
+                    const sql5 = "DELETE FROM carttable WHERE user_id = ? AND product_id = ?;";
                     return new Promise((resolve, reject) => {
                         db.query(sql5, [user_id, product_id], (err, result) => {
                             if (err) {
@@ -3381,7 +3381,7 @@ app.delete('/remove/cart/product/:id', async (req, res) => {
         const product_id = parseInt(req.params.id);
         try {
             // const { product_id, quantity } = product;
-            const sql5 = "DELETE FROM cartTable WHERE user_id = ? AND product_id = ?;";
+            const sql5 = "DELETE FROM carttable WHERE user_id = ? AND product_id = ?;";
             db.query(sql5, [user_id, product_id], (err, result) => {
                 if (err) {
                     console.log(err)
