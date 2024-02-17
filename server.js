@@ -61,7 +61,7 @@ const { error } = require('console')
 
 
 app.use(cors({
-    origin: ["http://www.healthhepta.com/"],
+    origin: ["http://localhost:3000"],
     // origin: ["http://localhost:3000"],
     methods: ['POST', 'PUT', 'GET', 'PATCH', 'DELETE'],
     credentials: true,
@@ -80,16 +80,7 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     proxy: true,
-    cookie: {
-        httpOnly: true,
-        sameSite: 'None', // For cross-site requests
-    }
-    // cookie: { secure: true, maxAge: oneDay }
-    // cookie: {
-    //     secure: false,
-    //     maxAge: oneDay,
-    //     sameSite: 'strict' // Or 'lax' if needed
-    // }
+    
 }));
 
 
