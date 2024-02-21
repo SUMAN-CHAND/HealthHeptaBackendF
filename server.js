@@ -80,7 +80,7 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     proxy: true,
-    
+
 }));
 
 
@@ -2019,14 +2019,101 @@ app.get('/profile-details', (req, res) => {
     }
 })
 
+app.get('/get/all/address', async (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id;
+        const sql = "SELECT  * FROM address where user_id = ?;";
 
+        db.query(sql, [user_id], (err, data) => {
+            if (err) {
+                return res.json(err);
+            }
+            if (data.length > 0) {
+                //  res.json("Success");
+                return res.json(data);
+            } else {
+                return res.json(null);
+            }
+        })
+
+
+    } else {
+        return res.json("User not login");
+    }
+
+})
+// // Make Primary address
+// app.post('/makeprimary/address',  (req, res) => {
+//     if (req.session.user) {
+//         const user_id = req.session.user.id;
+//         console.log(req.body)
+//         const {address_id} = req.body;
+//         // const address_id = req.body;
+//         console.log(address_id)
+//         const sql = "Insert into address (`primaryAddress`) values('primary') where address_id = ?";
+
+//         db.query(sql, [address_id], (err, data) => {
+//             if (err) {
+//                 console.log(err)
+//                 return res.json(err);
+//             }
+//             if (data.length > 0) {
+//                 //  res.json("Success");
+//                 console.log("success")
+//                 return res.json(success);
+//             } else {
+//                 return res.json(null);
+//             }
+//         })
+
+
+//     } else {
+//         return res.json("User not login");
+//     }
+// })
+
+app.post('/makeprimary/address', (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id;
+        const { address_id } = req.body;
+
+
+        const sql1 = "UPDATE address SET primaryAddress = '' WHERE primaryAddress = 'primary' and user_id = ?;";
+
+        db.query(sql1, [user_id], (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.json({ success: false, error: err.message });
+            }
+
+        });
+        const sql = "UPDATE address SET primaryAddress = 'primary' WHERE address_id = ?";
+
+        db.query(sql, [address_id], (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.json({ success: false, error: err.message });
+            }
+            if (result.affectedRows > 0) {
+                // console.log("Success");
+                return res.json({ success: true });
+            } else {
+                console.log("No rows affected");
+                return res.json({ success: false, message: "No rows affected" });
+            }
+        });
+    } else {
+        return res.json({ success: false, message: "User not logged in" });
+    }
+});
+//Get user data in Profile page
 app.get('/profile', async (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id;
         const user = req.session.user;
         // console.log(user)
         if (user.role === 'customer') {
-            const sql = "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ?;";
+            const sql = "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ? and address.primaryAddress = 'primary';";
             const sql1 = "SELECT  id ,name ,phone  FROM user_tbl where user_tbl.id = ?;";
 
             db.query(sql, [user_id], (err, data) => {
@@ -2069,6 +2156,9 @@ app.get('/profile', async (req, res) => {
         }
 
 
+    } else {
+
+        return res.json("User not login");
     }
 })
 
@@ -2557,7 +2647,7 @@ app.get('/cart/drug', (req, res) => {
         res.status(500).send("data not found")
     }
 })
-
+// see Product in cart
 app.get('/addtocart/:product_id', async (req, res) => {
 
     // const sql2 = "Select * from product where `product_id` In sql1";
@@ -2622,13 +2712,13 @@ app.get('/addtocart/:product_id', async (req, res) => {
 
 //     }
 // })
-app.post('/addtocart/:product_id/:quantity', (req, res) => {
+//Add product in cart
+app.post('/addtocart/:product_id/:quantity', async (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id;
         const user = req.session.user;
         // console.log(user)
         if (user.role === 'customer') {
-
             const value = [
                 req.params.product_id,
                 req.params.quantity,
@@ -2637,8 +2727,104 @@ app.post('/addtocart/:product_id/:quantity', (req, res) => {
 
             ]
 
-            const sql = "insert into carttable (`product_id`,`quantity`,`user_id`,`role`) values (?);";
-            db.query(sql, [value], (err, data) => {
+            const productInfo = await new Promise((resolve, reject) => {
+                const findproduct = "select * from carttable where product_id = ? and user_id = ?";
+                db.query(findproduct, [req.params.product_id, req.session.user.id], (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows);
+                    }
+                });
+            });
+            if (productInfo.length > 0) {
+                const sql = "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+                db.query(sql, [req.params.product_id, req.session.user.id], (err, data) => {
+                    if (err) {
+                        console.log(err)
+                        return res.json(err);
+                    }
+                    return res.json(data);
+
+                })
+            } else {
+
+                const sql = "insert into carttable (`product_id`,`quantity`,`user_id`,`role`) values (?);";
+                db.query(sql, [value], (err, data) => {
+                    if (err) {
+                        console.log(err)
+                        return res.json(err);
+                    }
+                    return res.json(data);
+
+                })
+            }
+
+
+        }
+        else {
+            const value = [
+                req.params.product_id,
+                req.params.quantity,
+                req.session.user.id,
+                'partner'
+
+            ]
+
+            const productInfo = await new Promise((resolve, reject) => {
+                const findproduct = "select * from carttable where product_id = ? and user_id = ?";
+                db.query(findproduct, [req.params.product_id, req.session.user.id], (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows);
+                    }
+                });
+            });
+            if (productInfo.length > 0) {
+                const sql = "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+                db.query(sql, [req.params.product_id, req.session.user.id], (err, data) => {
+                    if (err) {
+                        console.log(err)
+                        return res.json(err);
+                    }
+                    return res.json(data);
+
+                })
+            } else {
+                const sql = "insert into carttable (`product_id`,`quantity`,`user_id`,`role`) values (?);";
+                db.query(sql, [value], (err, data) => {
+                    if (err) {
+                        console.log(err)
+                        return res.json(err);
+                    }
+                    return res.json(data);
+
+                })
+            }
+        }
+
+
+
+    } else {
+        return res.json("Error");
+    }
+})
+//increase quantity of product in cart
+app.post('/product/increase_quantity/:product_id', (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id;
+        const user = req.session.user;
+        // console.log(user)
+        if (user.role === 'customer') {
+
+            const value = [
+                req.params.product_id,
+                req.session.user.id,
+            ]
+
+            const sql = "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+            db.query(sql, [req.params.product_id, req.session.user.id], (err, data) => {
                 if (err) {
                     console.log(err)
                     return res.json(err);
@@ -2650,14 +2836,11 @@ app.post('/addtocart/:product_id/:quantity', (req, res) => {
         else {
             const value = [
                 req.params.product_id,
-                req.params.quantity,
                 req.session.user.id,
-                'partner'
-
             ]
 
-            const sql = "insert into carttable (`product_id`,`quantity`,`user_id`,`role`) values (?);";
-            db.query(sql, [value], (err, data) => {
+            const sql = "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+            db.query(sql, [req.params.product_id, req.session.user.id], (err, data) => {
                 if (err) {
                     console.log(err)
                     return res.json(err);
@@ -2665,6 +2848,96 @@ app.post('/addtocart/:product_id/:quantity', (req, res) => {
                 return res.json(data);
 
             })
+        }
+    } else {
+        return res.json("Error");
+    }
+})
+//decrease  quantity of product in cart
+app.post('/product/decrease_quantity/:product_id', async (req, res) => {
+    if (req.session.user) {
+        const user_id = req.session.user.id;
+        const user = req.session.user;
+        // console.log(user)
+        if (user.role === 'customer') {
+
+            const value = [
+                req.params.product_id,
+                req.session.user.id,
+            ]
+
+
+            const sql = "UPDATE hh_dev_db.carttable SET quantity = quantity-1 WHERE product_id = ? and user_id = ?;";
+            db.query(sql, [req.params.product_id, req.session.user.id], (err, data) => {
+                if (err) {
+                    console.log(err)
+                    return res.json(err);
+                }
+                return res.json(data);
+
+            })
+            const productInfo = await new Promise((resolve, reject) => {
+                const findproduct = "select quantity from carttable where product_id = ? and user_id = ?";
+                db.query(findproduct, [req.params.product_id, req.session.user.id], (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows);
+                    }
+                });
+            });
+            if (productInfo[0].quantity === 0) {
+                const sql5 = "DELETE FROM carttable WHERE user_id = ? AND product_id = ?;";
+                return new Promise((resolve, reject) => {
+                    db.query(sql5, [user_id, req.params.product_id], (err, result) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(result);
+                        }
+                    });
+                });
+
+            }
+        }
+        else {
+            const value = [
+                req.params.product_id,
+                req.session.user.id,
+            ]
+
+            const sql = "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+            db.query(sql, [req.params.product_id, req.session.user.id], (err, data) => {
+                if (err) {
+                    console.log(err)
+                    return res.json(err);
+                }
+                return res.json(data);
+
+            })
+            const productInfo = await new Promise((resolve, reject) => {
+                const findproduct = "select quantity from carttable where product_id = ? and user_id = ?";
+                db.query(findproduct, [req.params.product_id, req.session.user.id], (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(rows);
+                    }
+                });
+            });
+            if (productInfo[0].quantity === 0) {
+                const sql5 = "DELETE FROM carttable WHERE user_id = ? AND product_id = ?;";
+                return new Promise((resolve, reject) => {
+                    db.query(sql5, [user_id, req.params.product_id], (err, result) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(result);
+                        }
+                    });
+                });
+
+            }
         }
     } else {
         return res.json("Error");
@@ -3536,7 +3809,7 @@ app.patch('/profile/phone', async (req, res) => {
 
 app.patch('/profile/address', async (req, res) => {
     if (req.session.user) {
-        const sql = "UPDATE address SET `Village` =?,`P_O`=?,`City`=?,`district`=?,`state`=?,`pin`=? where`user_id` = ?;";
+        const sql = "UPDATE address SET `Village` =?,`P_O`=?,`City`=?,`district`=?,`state`=?,`pin`=?,`primaryAddress` = 'primary' where`user_id` = ?;";
         const user_id = req.session.user.id;
         // var user_id = 2;
         const values = [
@@ -4639,7 +4912,7 @@ app.delete('/superadmin/delete/coupon/:coupon_id', (req, res) => {
 
 app.post('/superadmin/addproduct', async (req, res) => {
     const date = new Date().toISOString().split('T')[0];
-    const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`) values(?)";
+    const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`fulldesctiption`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`) values(?)";
 
     const values = [
         req.body.product_name,
@@ -4648,6 +4921,7 @@ app.post('/superadmin/addproduct', async (req, res) => {
         req.body.category,
         req.body.discount,
         req.body.description,
+        req.body.fulldesctiption,
         req.body.manufacturing,
         req.body.expiry,
         req.body.dragornot,
@@ -5749,6 +6023,7 @@ app.post('/sub-admin/home/addproduct', async (req, res) => {
             req.body.category,
             req.body.discount,
             req.body.description,
+            req.body.fulldesctiption,
             req.body.manufacturing,
             req.body.expiry,
             req.body.dragornot,
@@ -5761,11 +6036,12 @@ app.post('/sub-admin/home/addproduct', async (req, res) => {
             req.body.moleculesName,
             req.body.productImageId
 
+
         ]
 
         const creatProduct = await new Promise((resolve, reject) => {
             const date = new Date().toISOString().split('T')[0];
-            const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`) values(?)";
+            const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`fulldesctiption`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`) values(?)";
             db.query(sql, [values], (err, result) => {
                 if (err) {
                     reject(err);
