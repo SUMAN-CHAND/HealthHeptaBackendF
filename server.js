@@ -15,21 +15,16 @@ const nodemailer = require('nodemailer');
 // const mysql = require('mysql');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 // const socketIo = require('socket.io');
 const http = require('http');
 const twilio = require('twilio');
-const https = require('https');
-const fs = require('fs');
-
 
 
 
 
 const app = express()
-// const server = http.createServer(app);
-
-const server = https.createServer(app);
-
+const server = http.createServer(app);
 // const io = socketIo(server);
 // const diff = require("dialogflow-fulfillment");
 const webhook = require('./routes/webhook.js')
@@ -58,6 +53,17 @@ const e = require('express')
 const { error } = require('console')
 
 
+
+// *Middleware for HTTP to HTTPS redirection*
+app.use((req, res, next) => {
+    if (req.secure) {
+        // Already on HTTPS, continue processing
+        next();
+    } else {
+        // Redirect to HTTPS version of the same URL
+        res.redirect(301, `https://${req.headers.host}${req.url}`);
+    }
+});
 
 
 
@@ -7305,8 +7311,9 @@ app.get('/images/sub-admin', (req, res) => {
 // app.listen(8081, () => {
 //     console.log("Listening.... at " + 8081 + " Port");
 // })
-const port = process.env.PORT || 443;
 
-server.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+
+// Start the server (usually on port 80)
+app.listen(80, () => {
+    console.log('HTTP server listening on port 80');
 });
