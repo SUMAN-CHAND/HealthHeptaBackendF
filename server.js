@@ -15,16 +15,21 @@ const nodemailer = require('nodemailer');
 // const mysql = require('mysql');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 // const socketIo = require('socket.io');
 const http = require('http');
 const twilio = require('twilio');
+const https = require('https');
+const fs = require('fs');
+
 
 
 
 
 const app = express()
-const server = http.createServer(app);
+// const server = http.createServer(app);
+
+const server = https.createServer(app);
+
 // const io = socketIo(server);
 // const diff = require("dialogflow-fulfillment");
 const webhook = require('./routes/webhook.js')
@@ -7297,6 +7302,11 @@ app.get('/images/sub-admin', (req, res) => {
 //     res.status(200).send('Order placed successfully');
 // });
 
-app.listen(8081, () => {
-    console.log("Listening.... at " + 8081 + " Port");
-})
+// app.listen(8081, () => {
+//     console.log("Listening.... at " + 8081 + " Port");
+// })
+const port = process.env.PORT || 443;
+
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
