@@ -54,16 +54,16 @@ const { error } = require('console')
 
 
 
-// *Middleware for HTTP to HTTPS redirection*
-app.use((req, res, next) => {
-    if (req.secure) {
-        // Already on HTTPS, continue processing
-        next();
-    } else {
-        // Redirect to HTTPS version of the same URL
-        res.redirect(301, `https://${req.headers.host}${req.url}`);
-    }
-});
+// // *Middleware for HTTP to HTTPS redirection*
+// app.use((req, res, next) => {
+//     if (req.secure) {
+//         // Already on HTTPS, continue processing
+//         next();
+//     } else {
+//         // Redirect to HTTPS version of the same URL
+//         res.redirect(301, `https://${req.headers.host}${req.url}`);
+//     }
+// });
 
 
 
@@ -7308,12 +7308,12 @@ app.get('/images/sub-admin', (req, res) => {
 //     res.status(200).send('Order placed successfully');
 // });
 
-// app.listen(8081, () => {
-//     console.log("Listening.... at " + 8081 + " Port");
-// })
+app.listen(8081, () => {
+    console.log("Listening.... at " + 8081 + " Port");
+})
 
 
 // Start the server (usually on port 80)
-app.listen(80, () => {
-    console.log('HTTP server listening on port 80');
-});
+// app.listen(80, () => {
+//     console.log('HTTP server listening on port 80');
+// });
