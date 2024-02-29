@@ -7,7 +7,7 @@ router.get('/b2b/cart', (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id
         console.log(user_id)
-        const sql1 = "SELECT  product_name , product_price , cart_id,discount,quantity , sgst,cgst FROM b2b_product INNER JOIN b2b_cartTable ON b2b_product.product_id = b2b_cartTable.product_id AND b2b_cartTable.sub_admin_id = ?;";
+        const sql1 = "SELECT  product_name , product_price , cart_id,discount,quantity , sgst,cgst FROM b2b_product INNER JOIN b2b_carttable ON b2b_product.product_id = b2b_carttable.product_id AND b2b_carttable.sub_admin_id = ?;";
 
         db.query(sql1, [user_id], (err, data) => {
             if (err) {

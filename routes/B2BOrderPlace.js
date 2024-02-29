@@ -33,7 +33,7 @@ router.post('/b2b/orders', async (req, res) => {
 
             // Get the product IDs and quantities from the user's cart
             const productInfo = await new Promise((resolve, reject) => {
-                const sql1 = "SELECT b2b_product.product_id, b2b_cartTable.quantity FROM b2b_product INNER JOIN b2b_cartTable ON b2b_product.product_id = b2b_cartTable.product_id AND b2b_cartTable.sub_admin_id = ?;";
+                const sql1 = "SELECT b2b_product.product_id, b2b_carttable.quantity FROM b2b_product INNER JOIN b2b_carttable ON b2b_product.product_id = b2b_carttable.product_id AND b2b_carttable.sub_admin_id = ?;";
                 db.query(sql1, [user_id], (err, rows) => {
                     if (err) {
                         reject(err);
@@ -102,7 +102,7 @@ router.post('/b2b/orders', async (req, res) => {
 
             const deleteCartItems = await Promise.all(productInfo.map(product => {
                 const { product_id, quantity } = product;
-                const sql5 = "DELETE FROM b2b_cartTable WHERE sub_admin_id = ? AND product_id = ?;";
+                const sql5 = "DELETE FROM b2b_carttable WHERE sub_admin_id = ? AND product_id = ?;";
                 return new Promise((resolve, reject) => {
                     db.query(sql5, [user_id, product_id], (err, result) => {
                         if (err) {

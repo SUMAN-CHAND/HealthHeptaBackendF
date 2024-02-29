@@ -14,7 +14,7 @@ router.get('/sub_admin/profile-details', (req, res) => {
             const sql = "SELECT  sub_admin.id ,name ,phone ,role,SubAdminImageId,LicenceImageId,address_sub_admin.address_id ,Village ,P_O,City,district,State,Pin  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id and sub_admin.id = ?;";
             // const sql2 = "SELECT  id ,name ,phone ,role FROM sub_admin where sub_admin.id = ?;";
 
-            const sql1 = "Select COUNT(`cart_id`) AS namesCount from B2B_CartTable where sub_admin_id = ?";
+            const sql1 = "Select COUNT(`cart_id`) AS namesCount from b2b_carttable where sub_admin_id = ?";
             db.query(sql, [user_id], (err, data) => {
                 if (err) {
                     return res.json(err);
@@ -43,7 +43,7 @@ router.get('/sub_admin/profile-details', (req, res) => {
             })
         } else {
             const sql = "Select * from address INNER JOIN address_sub_admin ON address_sub_admin.address_id = address.address_id  where address_sub_admin.sub_admin_id = ?;";
-            // const sql1 = "Select COUNT(`cart_id`) AS namesCount from CartTable where user_id = ?";
+            // const sql1 = "Select COUNT(`cart_id`) AS namesCount from carttable where user_id = ?";
             db.query(sql, [user_id], (err, data) => {
                 if (err) {
                     // console.log(err)

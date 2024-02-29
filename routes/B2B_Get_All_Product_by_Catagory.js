@@ -10,7 +10,7 @@ router.get('/b2b/product/newadded', async (req, res) => {
 
 
   try {
-    const query = "select * from B2B_product order by addedat;";
+    const query = "select * from b2b_product order by addedat;";
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -61,7 +61,7 @@ router.get('/b2b/product/20%off', async (req, res) => {
 
 
   try {
-    const query = "select * from B2B_product where discount>20 and discount<50 order by discount DESC;";
+    const query = "select * from b2b_product where discount>20 and discount<50 order by discount DESC;";
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -112,7 +112,7 @@ router.get('/b2b/product/50%off', async (req, res) => {
 
 
   try {
-    const query = "select * from B2B_product where discount>50 order by discount DESC;";
+    const query = "select * from b2b_product where discount>50 order by discount DESC;";
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -161,7 +161,7 @@ router.get('/b2b/product/50%off', async (req, res) => {
 
 router.get('/b2b/product/bestoffer', async (req, res) => {
   try {
-    const query = "select * from B2B_product order by discount DESC;";
+    const query = "select * from b2b_product order by discount DESC;";
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -208,7 +208,7 @@ router.get('/b2b/product/bestoffer', async (req, res) => {
 })
 router.get('/b2b/product/lotproduct', async (req, res) => {
   try {
-    const query = "select * from B2B_product where PackTypeOfMedicine = 'lotProduct';";
+    const query = "select * from b2b_product where PackTypeOfMedicine = 'lotProduct';";
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -255,7 +255,7 @@ router.get('/b2b/product/lotproduct', async (req, res) => {
 })
 router.get('/b2b/product/singleProduct', async (req, res) => {
   try {
-    const query = "select * from B2B_product where PackTypeOfMedicine = 'singleProduct';";
+    const query = "select * from b2b_product where PackTypeOfMedicine = 'singleProduct';";
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {

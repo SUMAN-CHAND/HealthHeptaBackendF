@@ -24,7 +24,7 @@ router.get('/super_admin/b2b/dashboard/details', async (req, res) => {
     if (req.session.user) {
         const user_id = req.session.user.id
         //This is for no of user in our platfrom
-        const sql = "SELECT COUNT(*) as no FROM User_Tbl;";
+        const sql = "SELECT COUNT(*) as no FROM user_tbl;";
 
         db.query(sql, async (err, data) => {
             if (err) {
@@ -386,13 +386,13 @@ router.get('/super_admin/b2b/dashboard/details', async (req, res) => {
 
 
         //This is for total Orders  with in a week
-        const sql32 = "select COUNT(*) as no from b2b_Orders  where  order_date = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
-        const sql33 = "select COUNT(*) as no from b2b_Orders where order_date = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
-        const sql34 = "select COUNT(*) as no from b2b_Orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
-        const sql35 = "select COUNT(*) as no from b2b_Orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
-        const sql36 = "select COUNT(*) as no from b2b_Orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
-        const sql37 = "select COUNT(*) as no from b2b_Orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
-        const sql38 = "select COUNT(*) as no from b2b_Orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
+        const sql32 = "select COUNT(*) as no from b2b_orders  where  order_date = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
+        const sql33 = "select COUNT(*) as no from b2b_orders where order_date = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
+        const sql34 = "select COUNT(*) as no from b2b_orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
+        const sql35 = "select COUNT(*) as no from b2b_orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
+        const sql36 = "select COUNT(*) as no from b2b_orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
+        const sql37 = "select COUNT(*) as no from b2b_orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
+        const sql38 = "select COUNT(*) as no from b2b_orders where  order_date = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
 
         db.query(sql32, (err, data) => {
             if (err) {

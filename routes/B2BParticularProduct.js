@@ -8,7 +8,7 @@ router.get('/b2b/addtocart/:product_id', async (req, res) => {
     // const sql2 = "Select * from product where `product_id` In sql1";
     // console.log(req.params.product_id)
     const product_id = req.params.product_id;
-    const query = "Select *  from B2B_product where product_id = ?";
+    const query = "Select *  from b2b_product where product_id = ?";
     const productResults = await new Promise((resolve, reject) => {
         db.query(query, [product_id], (err, result) => {
             if (err) {
@@ -63,7 +63,7 @@ router.post('/b2b/addtocart/:product_id/:quantity', (req, res) => {
 
         try {
             // Insert the product into the database
-            db.query('insert into B2B_carttable (`product_id`,`quantity`,`sub_admin_id`) values (?,?,?);', product, (err, result) => {
+            db.query('insert into b2b_carttable (`product_id`,`quantity`,`sub_admin_id`) values (?,?,?);', product, (err, result) => {
                 if (err) {
                     console.log(err);
                     res.status(500).json({ error: 'Failed to add the product to CART' });
