@@ -32,7 +32,7 @@ const b2b_profile = require("./routes/B2BProfile.js");
 const b2b_order_place = require("./routes/B2BOrderPlace.js");
 const b2b_cart_profile = require("./routes/B2BCartProfile.js");
 const b2b_search = require("./routes/B2BSearchFuntion.js");
-const sub_admin_dashboard = require("./routes/Sub_admin_Dashboard.js");
+const sub_admin_dashboard = require("./routes/sub_admin_Dashboard.js");
 const b2b_superadmin_dashboard = require("./routes/B2b_Super_Dashboard.js");
 const b2b_superadmin_home = require("./routes/B2B_Super_Admin_Home.js");
 const showProduct = require("./routes/B2B_Get_All_Product_by_Catagory.js");
@@ -422,8 +422,8 @@ app.post("/labsearch", async (req, res) => {
 
   try {
     const query = `
-        SELECT Test_id, Test_Name ,name,role,Test_Desc,Clinic_id,test_imageId,Price,address.pin from  Laboratory_Tests_Details
-        INNER JOIN sub_admin ON sub_admin.id = Laboratory_Tests_Details.clinic_id 
+        SELECT Test_id, Test_Name ,name,role,Test_Desc,Clinic_id,test_imageId,Price,address.pin from  laboratory_tests_details
+        INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id 
         INNER JOIN address_sub_admin ON address_sub_admin.sub_admin_id = sub_admin.id 
         INNER JOIN address ON address_sub_admin.sub_admin_id = address.address_id   
         where Test_Name Like ?
@@ -1030,7 +1030,7 @@ app.post("/doctorbook", async (req, res) => {
   }
 });
 
-//Lab Booking
+//Lab booking
 app.post("/labbook", async (req, res) => {
   if (req.session.user) {
     try {
@@ -1075,7 +1075,7 @@ app.post("/labbook", async (req, res) => {
               const Phone_number = `+91${data[0].phone}`;
               //    console.log(Phone_number)
               // console.log(req.body)
-              const sql = `INSERT INTO LabTestBookedtable (Test_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,LabTestStatus,role,gender,sample_collection) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','customer',?,?)`;
+              const sql = `INSERT INTO labtestbookedtable (Test_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,LabTestStatus,role,gender,sample_collection) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','customer',?,?)`;
               try {
                 const labBooking = await new Promise((resolve, reject) => {
                   db.query(
@@ -1200,7 +1200,7 @@ app.post("/labbook", async (req, res) => {
               const Phone_number = `+91${data[0].phone}`;
               //    console.log(Phone_number)
               // console.log(req.body)
-              const sql = `INSERT INTO LabTestBookedtable (Test_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,LabTestStatus,role,gender,sample_collection) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','partner',?,?)`;
+              const sql = `INSERT INTO labtestbookedtable (Test_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,LabTestStatus,role,gender,sample_collection) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','partner',?,?)`;
               try {
                 const labBooking = await new Promise((resolve, reject) => {
                   db.query(
@@ -2173,7 +2173,7 @@ app.get("/get/all/address", async (req, res) => {
 //         const {address_id} = req.body;
 //         // const address_id = req.body;
 //         console.log(address_id)
-//         const sql = "Insert into address (`primaryAddress`) values('primary') where address_id = ?";
+//         const sql = "Insert into address (`primaryaddress`) values('primary') where address_id = ?";
 
 //         db.query(sql, [address_id], (err, data) => {
 //             if (err) {
@@ -2200,7 +2200,7 @@ app.post("/makeprimary/address", (req, res) => {
     const { address_id } = req.body;
 
     const sql1 =
-      "UPDATE address SET primaryAddress = '' WHERE primaryAddress = 'primary' and user_id = ?;";
+      "UPDATE address SET primaryaddress = '' WHERE primaryaddress = 'primary' and user_id = ?;";
 
     db.query(sql1, [user_id], (err, result) => {
       if (err) {
@@ -2209,7 +2209,7 @@ app.post("/makeprimary/address", (req, res) => {
       }
     });
     const sql =
-      "UPDATE address SET primaryAddress = 'primary' WHERE address_id = ?";
+      "UPDATE address SET primaryaddress = 'primary' WHERE address_id = ?";
 
     db.query(sql, [address_id], (err, result) => {
       if (err) {
@@ -2236,7 +2236,7 @@ app.get("/profile", async (req, res) => {
     // console.log(user)
     if (user.role === "customer") {
       const sql =
-        "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ? and address.primaryAddress = 'primary';";
+        "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,Pin FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ? and address.primaryaddress = 'primary';";
       const sql1 =
         "SELECT  id ,name ,phone  FROM user_tbl where user_tbl.id = ?;";
 
@@ -3340,10 +3340,10 @@ app.post("/orders", async (req, res) => {
         // console.log("SubAdminIDs " + SubAdminIDs)
         if (SubAdminIDs.length > 1) {
           // Insert order items into sub Admin
-          const insertOrdersInSubAdmin = await Promise.all(
+          const insertordersInSubAdmin = await Promise.all(
             SubAdminIDs.map((SubAdminID) => {
               const sql4 =
-                "INSERT INTO order_sub_Admin (order_id, sub_admin_id) VALUES (?, ?);";
+                "INSERT INTO order_sub_admin (order_id, sub_admin_id) VALUES (?, ?);";
               return new Promise((resolve, reject) => {
                 db.query(sql4, [createOrder, SubAdminID], (err, result) => {
                   if (err) {
@@ -3552,10 +3552,10 @@ app.post("/orders", async (req, res) => {
         // console.log("SubAdminIDs " + SubAdminIDs.length)
         if (SubAdminIDs.length > 1) {
           // Insert order items into sub Admin
-          const insertOrdersInSubAdmin = await Promise.all(
+          const insertordersInSubAdmin = await Promise.all(
             SubAdminIDs.map((SubAdminID) => {
               const sql4 =
-                "INSERT INTO order_sub_Admin (order_id, sub_admin_id) VALUES (?, ?);";
+                "INSERT INTO order_sub_admin (order_id, sub_admin_id) VALUES (?, ?);";
               return new Promise((resolve, reject) => {
                 db.query(sql4, [createOrder, SubAdminID], (err, result) => {
                   if (err) {
@@ -3998,7 +3998,7 @@ app.patch("/profile/phone", async (req, res) => {
 app.patch("/profile/address", async (req, res) => {
   if (req.session.user) {
     const sql =
-      "UPDATE address SET `Village` =?,`P_O`=?,`City`=?,`district`=?,`state`=?,`pin`=?,`primaryAddress` = 'primary' where`user_id` = ?;";
+      "UPDATE address SET `Village` =?,`P_O`=?,`City`=?,`district`=?,`state`=?,`pin`=?,`primaryaddress` = 'primary' where`user_id` = ?;";
     const user_id = req.session.user.id;
     // var user_id = 2;
     const values = [
@@ -4260,7 +4260,7 @@ app.post("/superadmin/generate-coupon", (req, res) => {
   ];
   // Store the coupon code in your database or return it as a response
   const sql =
-    "insert into Coupon (`coupon_code`,`discount_percentage`,`expiry_date`,`is_active`,`created_at`) values (?);";
+    "insert into coupon (`coupon_code`,`discount_percentage`,`expiry_date`,`is_active`,`created_at`) values (?);";
   db.query(sql, [values], (err, data) => {
     if (err) {
       console.log(err);
@@ -4705,19 +4705,19 @@ app.get("/superadmin/ordersno/week", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "select COUNT(*) as no from Orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
+      "select COUNT(*) as no from orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
     const sql2 =
-      "select COUNT(*) as no from Orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
+      "select COUNT(*) as no from orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
     const sql3 =
-      "select COUNT(*) as no from Orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
+      "select COUNT(*) as no from orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
     const sql4 =
-      "select COUNT(*) as no from Orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
+      "select COUNT(*) as no from orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
     const sql5 =
-      "select COUNT(*) as no from Orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
+      "select COUNT(*) as no from orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
     const sql6 =
-      "select COUNT(*) as no from Orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
+      "select COUNT(*) as no from orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
     const sql7 =
-      "select COUNT(*) as no from Orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
+      "select COUNT(*) as no from orders where  CAST(order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -4968,11 +4968,11 @@ app.get("/superadmin/delivery_partner", (req, res) => {
     res.status(500).send("data not found");
   }
 });
-//Coupon
+//coupon
 app.get("/superadmin/coupon", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
-    const sql1 = "select * from Coupon;";
+    const sql1 = "select * from coupon;";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -5097,7 +5097,7 @@ app.delete("/superadmin/delete/coupon/:coupon_id", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const coupon_id = req.params.coupon_id;
-    // console.log(`Deleting Coupon with ID: ${coupon_id}`);
+    // console.log(`Deleting coupon with ID: ${coupon_id}`);
     const sql = "SET FOREIGN_KEY_CHECKS=0;";
     const sql1 = "delete from coupon where id = ?;";
     db.query(sql, (err, data) => {
@@ -5109,7 +5109,7 @@ app.delete("/superadmin/delete/coupon/:coupon_id", (req, res) => {
             console.error(err);
             return res.json(err);
           } else {
-            // console.log(`Coupon with ID ${coupon_id} deleted successfully.`);
+            // console.log(`coupon with ID ${coupon_id} deleted successfully.`);
             return res.json("success");
           }
         });
@@ -5480,7 +5480,7 @@ app.get("/superadmin/subadmin/orders/:user_id", (req, res) => {
     const user_id = req.params.user_id;
     // console.log(user_id)
     const sql1 =
-      " SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?";
+      " SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?";
 
     // const sql1 = " select product.product_id , product_name,product_price,discount,DrugOrNot,manufacturing,expiry,product_quantity,description from product  INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id where sub_admin_id = ? ";
 
@@ -5543,7 +5543,7 @@ app.post("/sub-admin/signup", async (req, res) => {
 });
 app.post("/sub_admin/complete_profile", async (req, res) => {
   try {
-    // const sql = "Insert into Sub_Admin (`LicenceImageId`,`SubAdminImageId`) values(?) where id = ?;";
+    // const sql = "Insert into sub_admin (`LicenceImageId`,`SubAdminImageId`) values(?) where id = ?;";
     const sql =
       "UPDATE sub_admin SET LicenceImageId = ?, SubAdminImageId= ? WHERE id = ?;";
     // const values = [
@@ -5971,7 +5971,7 @@ app.get("/laboratory/lab_tests", async (req, res) => {
   try {
     // const user_id = req.session.user.id;
     const query =
-      "select  Test_id, Test_Name ,Test_Desc,Clinic_id,test_imageId,Landmark,Price from Laboratory_Tests_Details INNER JOIN sub_admin ON sub_admin.id = Laboratory_Tests_Details.clinic_id INNER JOIN sub_admin_details ON sub_admin.id = sub_admin_details.sub_admin_id ;";
+      "select  Test_id, Test_Name ,Test_Desc,Clinic_id,test_imageId,Landmark,Price from laboratory_tests_details INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id INNER JOIN sub_admin_details ON sub_admin.id = sub_admin_details.sub_admin_id ;";
     const subResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -6038,7 +6038,7 @@ app.get("/book/lab-test/:id", async (req, res) => {
   try {
     // const user_id = req.session.user.id;
     const query =
-      "select  Test_id, Test_Name ,Test_Desc,Clinic_id,Price,test_imageId,Landmark from Laboratory_Tests_Details INNER JOIN sub_admin ON sub_admin.id = Laboratory_Tests_Details.clinic_id INNER JOIN sub_admin_details ON sub_admin.id = sub_admin_details.sub_admin_id where Test_id = ?;";
+      "select  Test_id, Test_Name ,Test_Desc,Clinic_id,Price,test_imageId,Landmark from laboratory_tests_details INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id INNER JOIN sub_admin_details ON sub_admin.id = sub_admin_details.sub_admin_id where Test_id = ?;";
     const subResults = await new Promise((resolve, reject) => {
       db.query(query, [Test_id], (err, result) => {
         if (err) {
@@ -6297,7 +6297,7 @@ app.post("/sub-admin/home/addproduct", async (req, res) => {
       });
     });
 
-    const addProductIdProduct_Sub_Admin = await new Promise(
+    const addProductIdProduct_sub_admin = await new Promise(
       (resolve, reject) => {
         const sql =
           "Insert into product_sub_admin(`product_id`,`sub_admin_id`)  values(?,?)";
@@ -6515,7 +6515,7 @@ app.get("/sub-admin/orders", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?";
+      " SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?";
     db.query(sql1, [user_id], (err, data) => {
       if (err) {
         return res.json(err);
@@ -6574,7 +6574,7 @@ app.get("/sub-admin/payments", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " select payment_id,user_id,payments.order_id,payment_date,total_amount,payment_status,payment_type,product_id FROM payments INNER JOIN orders ON payments.order_id = orders.id INNER JOIN order_items ON order_items.order_id = orders.id INNER JOIN order_sub_Admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?;";
+      " select payment_id,user_id,payments.order_id,payment_date,total_amount,payment_status,payment_type,product_id FROM payments INNER JOIN orders ON payments.order_id = orders.id INNER JOIN order_items ON order_items.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?;";
     // console.log(user_id)
     db.query(sql1, [user_id], (err, data) => {
       if (err) {
@@ -6765,7 +6765,7 @@ app.post("/sub-admin/add-new-laboratory-test", (req, res) => {
     }
 
     const query = `
-        INSERT INTO Laboratory_Tests_Details (Test_Name, Test_Desc,price,test_imageId,clinic_id)
+        INSERT INTO laboratory_tests_details (Test_Name, Test_Desc,price,test_imageId,clinic_id)
         VALUES (?, ?, ?,?,?)
     `;
 
@@ -6957,7 +6957,7 @@ app.get("/sub-admin/see-labtests", async (req, res) => {
     try {
       const user_id = req.session.user.id;
       const query =
-        "SELECT * FROM Laboratory_Tests_Details WHERE clinic_id = ?";
+        "SELECT * FROM laboratory_tests_details WHERE clinic_id = ?";
       const laboratoryResults = await new Promise((resolve, reject) => {
         db.query(query, user_id, (err, result) => {
           if (err) {
@@ -7010,7 +7010,7 @@ app.get("/particular-laboratory/see-labtests/:client_id", async (req, res) => {
   const clinic_id = req.params.client_id;
   try {
     // const user_id = req.session.user.id;
-    const query = "SELECT * FROM Laboratory_Tests_Details WHERE clinic_id = ?";
+    const query = "SELECT * FROM laboratory_tests_details WHERE clinic_id = ?";
     const laboratoryResults = await new Promise((resolve, reject) => {
       db.query(query, clinic_id, (err, result) => {
         if (err) {
@@ -7104,7 +7104,7 @@ app.get("/sub-admin/see-lab-bookings", (req, res) => {
 
     const clinic_id = user_id;
     const sql =
-      "Select LabTestBookedtable.Test_id,appoint_date,LabTestBookedtable.name,Laboratory_Tests_Details.Test_Name,sample_collection,appoint_time,ph_number,user_id,LabTestBookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from LabTestBookedtable INNER JOIN Laboratory_Tests_Details ON LabTestBookedtable.Test_id = Laboratory_Tests_Details.Test_id INNER JOIN sub_admin ON sub_admin.id = Laboratory_Tests_Details.clinic_id  where LabTestBookedtable.clinic_id = ?;";
+      "Select labtestbookedtable.Test_id,appoint_date,labtestbookedtable.name,laboratory_tests_details.Test_Name,sample_collection,appoint_time,ph_number,user_id,labtestbookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from labtestbookedtable INNER JOIN laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id  where labtestbookedtable.clinic_id = ?;";
     db.query(sql, [clinic_id], (err, data) => {
       if (err) {
         return res.json("Error");
@@ -7198,7 +7198,7 @@ app.get("/user/see-lab-booking", async (req, res) => {
     // console.log(user_id)
     // const clinic_id = user_id;
     const query =
-      "Select labtestbookedtable.id ,LabTestBookedtable.Test_id,appoint_date,LabTestBookedtable.name,Laboratory_Tests_Details.Test_Name,test_imageId,sample_collection,appoint_time,ph_number,user_id,LabTestBookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from LabTestBookedtable INNER JOIN Laboratory_Tests_Details ON LabTestBookedtable.Test_id = Laboratory_Tests_Details.Test_id INNER JOIN sub_admin ON sub_admin.id = Laboratory_Tests_Details.clinic_id  where LabTestBookedtable.user_id = ?;";
+      "Select labtestbookedtable.id ,labtestbookedtable.Test_id,appoint_date,labtestbookedtable.name,laboratory_tests_details.Test_Name,test_imageId,sample_collection,appoint_time,ph_number,user_id,labtestbookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from labtestbookedtable INNER JOIN laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id  where labtestbookedtable.user_id = ?;";
     const laboratoryResults = await new Promise((resolve, reject) => {
       db.query(query, user_id, (err, result) => {
         if (err) {
@@ -7247,7 +7247,7 @@ app.get("/user/see-lab-booking/:id", async (req, res) => {
     // console.log(user_id)
     // const clinic_id = user_id;
     const query =
-      "Select labtestbookedtable.id ,LabTestBookedtable.Test_id,appoint_date,LabTestBookedtable.name,Laboratory_Tests_Details.Test_Name,test_imageId,sample_collection,appoint_time,ph_number,user_id,LabTestBookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from LabTestBookedtable INNER JOIN Laboratory_Tests_Details ON LabTestBookedtable.Test_id = Laboratory_Tests_Details.Test_id INNER JOIN sub_admin ON sub_admin.id = Laboratory_Tests_Details.clinic_id  where labtestbookedtable.id = ?;";
+      "Select labtestbookedtable.id ,labtestbookedtable.Test_id,appoint_date,labtestbookedtable.name,laboratory_tests_details.Test_Name,test_imageId,sample_collection,appoint_time,ph_number,user_id,labtestbookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from labtestbookedtable INNER JOIN laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id  where labtestbookedtable.id = ?;";
     const laboratoryResults = await new Promise((resolve, reject) => {
       db.query(query, test_id, (err, result) => {
         if (err) {
@@ -7597,25 +7597,41 @@ app.get("/images/sub-admin", (req, res) => {
 //     res.status(200).send('Order placed successfully');
 // });
 
-// app.listen(8081, () => {
-//     console.log("Listening.... at " + 8081 + " Port");
-// })
+app.listen(8081, () => {
+    console.log("Listening.... at " + 8081 + " Port");
+})
 
 // npm install https
 
-const https = require("https");
-const PORT = process.env.HTTPS_PORT ?? 443;
-const secureServer = https.createServer(
-  {
-    key: fs.readFileSync(process.env.SSL_KEY || "client-key.pem"),
-    cert: fs.readFileSync(process.env.SSL_CERT || "client.csr"),
-  },
-  app
-);
+// const https = require('https');
+// // const fs = require('fs');
 
-secureServer.listen(PORT, () => {
-  console.log(`secure server running at ${PORT}...`);
-});
+
+// const privateKey = fs.readFileSync('private.key');
+// const certificate = fs.readFileSync('certificate.csr'); 
+
+// const options = {
+//   key: privateKey,
+//   cert: certificate
+// };
+
+// https.createServer(options, (req, res) => {
+//   // Handle requests
+// }).listen(443);
+
+
+// const PORT = process.env.HTTPS_PORT ?? 443;
+// const secureServer = https.createServer(
+//   {
+//     key: fs.readFileSync(process.env.SSL_KEY || "client-key.pem"),
+//     cert: fs.readFileSync(process.env.SSL_CERT || "client.csr"),
+//   },
+//   app
+// );
+
+// secureServer.listen(PORT, () => {
+//   console.log(`secure server running at ${PORT}...`);
+// });
 
 // Start the server (usually on port 80)
 // app.listen(80, () => {
