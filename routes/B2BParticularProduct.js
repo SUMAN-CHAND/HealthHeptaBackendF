@@ -47,35 +47,112 @@ router.get('/b2b/addtocart/:product_id', async (req, res) => {
 })
 
 //Add to Cart Route
-
 router.post('/b2b/addtocart/:product_id/:quantity', (req, res) => {
     if (req.session.user) {
-        const product_id = parseInt(req.params.product_id);
-        const quantity = parseInt(req.params.quantity);
-        const sub_admin_id = parseInt(req.session.user.id);
+        const user = req.session.user;
+        // console.log(req.session.user)
+        if (user.role === 'b2b_employee') {
+            // console.log(user.role)
+            
+            const product_id = parseInt(req.params.product_id);
+            const quantity = parseInt(req.params.quantity);
+            const b2b_employee_id = parseInt(req.session.user.id);
 
-        const product = [
-            product_id,
-            quantity,
-            sub_admin_id
-        ]
-        // console.log(product)
+            const product = [
+                product_id,
+                quantity,
+                b2b_employee_id
+            ]
+            // console.log(product)
 
-        try {
-            // Insert the product into the database
-            db.query('insert into b2b_carttable (`product_id`,`quantity`,`sub_admin_id`) values (?,?,?);', product, (err, result) => {
-                if (err) {
-                    console.log(err);
-                    res.status(500).json({ error: 'Failed to add the product to CART' });
-                } else {
-                    // console.log('Product added successfully');
-                    res.status(200).json({ message: 'Product added to CART successfully' });
-                }
-            });
-        } catch (err) {
-            console.error('Error while processing the request: ' + err.message);
-            res.status(500).json({ error: 'An error occurred while processing the request' });
+            try {
+                // Insert the product into the database
+                db.query('insert into b2b_carttable (`product_id`,`quantity`,`b2b_employee_id`) values (?,?,?);', product, (err, result) => {
+                    if (err) {
+                        console.log(err);
+                        res.status(500).json({ error: 'Failed to add the product to CART' });
+                    } else {
+                        // console.log('Product added successfully');
+                        res.status(200).json({ message: 'Product added to CART successfully' });
+                    }
+                });
+            } catch (err) {
+                console.error('Error while processing the request: ' + err.message);
+                res.status(500).json({ error: 'An error occurred while processing the request' });
+            }
+
+        } else {
+
+
+            const product_id = parseInt(req.params.product_id);
+            const quantity = parseInt(req.params.quantity);
+            const sub_admin_id = parseInt(req.session.user.id);
+
+            const product = [
+                product_id,
+                quantity,
+                sub_admin_id
+            ]
+            // console.log(product)
+
+            try {
+                // Insert the product into the database
+                db.query('insert into b2b_carttable (`product_id`,`quantity`,`sub_admin_id`) values (?,?,?);', product, (err, result) => {
+                    if (err) {
+                        console.log(err);
+                        res.status(500).json({ error: 'Failed to add the product to CART' });
+                    } else {
+                        // console.log('Product added successfully');
+                        res.status(200).json({ message: 'Product added to CART successfully' });
+                    }
+                });
+            } catch (err) {
+                console.error('Error while processing the request: ' + err.message);
+                res.status(500).json({ error: 'An error occurred while processing the request' });
+            }
+
         }
+    } else {
+        return res.json(null);
+    }
+});
+
+//add subadmin by b2b-employee
+router.post('/b2b/add/subadmin/:subadmin_id', (req, res) => {
+    if (req.session.user) {
+        const user = req.session.user;
+        // console.log(req.session.user)
+        if (user.role === 'b2b_employee') {
+            // console.log(user.role)
+            
+            const sub_admin_id = parseInt(req.params.subadmin_id);
+            // const quantity = parseInt(req.params.quantity);
+            const b2b_employee_id = parseInt(req.session.user.id);
+
+            const product = [
+                sub_admin_id,
+                b2b_employee_id
+            ]
+            // console.log(product)
+
+            try {
+                // Insert the product into the database
+                db.query('update b2b_carttable set sub_admin_id = ? where b2b_employee_id=?;', product, (err, result) => {
+                    if (err) {
+                        console.log(err);
+                        res.status(500).json({ error: 'Failed to add the product to CART' });
+                    } else {
+                        // console.log('Product added successfully');
+                        res.status(200).json({ message: 'Product added to CART successfully' });
+                    }
+                });
+            } catch (err) {
+                console.error('Error while processing the request: ' + err.message);
+                res.status(500).json({ error: 'An error occurred while processing the request' });
+            }
+
+        }
+         
     } else {
         return res.json(null);
     }

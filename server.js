@@ -37,6 +37,9 @@ const b2b_superadmin_dashboard = require("./routes/B2b_Super_Dashboard.js");
 const b2b_superadmin_home = require("./routes/B2B_Super_Admin_Home.js");
 const showProduct = require("./routes/B2B_Get_All_Product_by_Catagory.js");
 const partner_signup = require("./routes/Partner routes/Partner_Signup.js");
+const b2bemployee = require("./routes/B2BEmployee/B2BEmployee.js");
+const B2BEmployeeOperation = require("./routes/B2BEmployee/B2BEmployeeOperation.js");
+const b2bemployeeprofile = require("./routes/B2BEmployee/B2BEmployeeProfile.js");
 const partner_details = require("./routes/Partner routes/Partner_Details.js");
 const partner_commission = require("./routes/Partner routes/Partner_Commission.js");
 const ShowDocuments = require("./routes/ShowDocuments.js");
@@ -112,6 +115,9 @@ app.use("/", orderoperation); // Use this router to see order status
 app.use("/", delivery_partner_commission); // Use this for delivery persion commission
 app.use("/", myMap); // Use this router for Map
 // app.use('/', videocall); // Use this router see documents
+app.use("/", b2bemployee); // Use this router to Sign up Partner
+app.use("/", B2BEmployeeOperation); // Use this router to Sign up Partner
+app.use("/", b2bemployeeprofile); // Use this router to  profile details of Partner
 
 app.get("/locations", async (req, res) => {
   const sql = "select pin_code from locations;";
@@ -792,7 +798,7 @@ app.post("/labbook", async (req, res) => {
                           .json({ error: "Failed to book appointment" });
                       } else {
                         resolve(result.insertId); // Get the newly inserted order ID
-                        
+
                       }
                     }
                   );
@@ -814,7 +820,7 @@ app.post("/labbook", async (req, res) => {
                     }
                   );
                 });
-               
+
                 return res
                   .status(200)
                   .json({ message: "Appointment booked successfully" });
@@ -846,7 +852,7 @@ app.post("/labbook", async (req, res) => {
           payment,
         } = req.body[0];
         const { clinic_id } = req.body[1];
-        
+
         const sql1 = `SELECT * FROM sub_admin WHERE id = ?`;
         try {
           db.query(sql1, [req.body[1]], async (err, data) => {
@@ -855,7 +861,7 @@ app.post("/labbook", async (req, res) => {
             } else {
               doctor = data;
               const Phone_number = `+91${data[0].phone}`;
-             
+
               const sql = `INSERT INTO labtestbookedtable (Test_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,LabTestStatus,role,gender,sample_collection) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','partner',?,?)`;
               try {
                 const labBooking = await new Promise((resolve, reject) => {
@@ -880,7 +886,7 @@ app.post("/labbook", async (req, res) => {
                           .json({ error: "Failed to book appointment" });
                       } else {
                         resolve(result.insertId); // Get the newly inserted order ID
-                       
+
                       }
                     }
                   );
@@ -1252,7 +1258,7 @@ app.post("/search", async (req, res) => {
   }
   // console.log(likefiled)
   const input = `%${likefiled}%`;
-  
+
   //This is for Product
   try {
     // const user_id = req.session.user.id;
@@ -1286,7 +1292,7 @@ app.post("/search", async (req, res) => {
       });
 
       images = await Promise.all(imagesPromises);
-     
+
     }
     //This is for Lab Test
     const query1 =
@@ -1516,7 +1522,7 @@ app.post("/login", async (req, res) => {
             return res.json(err);
           }
           if (response) {
-           
+
             req.session.loggedIn = true; // Set a session variable
             req.session.user = data[0];
             req.session.save();
@@ -1644,7 +1650,7 @@ app.get("/profile-details", (req, res) => {
             return res.json(err);
           }
           if (data.length > 0) {
-           
+
             return res.json([data[0].namesCount, user_id, address[0].City]);
           } else {
             return res.json("Faile");
@@ -1768,7 +1774,7 @@ app.get("/profile", async (req, res) => {
 });
 
 app.get("/product", async (req, res) => {
- 
+
   try {
     const query = " select * from product;";
     const productResults = await new Promise((resolve, reject) => {
@@ -1952,7 +1958,7 @@ app.get("/catagorys", async (req, res) => {
       });
     });
 
-   
+
     return res.json(productResults);
   } catch (error) {
     console.error("Error: ", error);
@@ -1962,7 +1968,7 @@ app.get("/catagorys", async (req, res) => {
   }
 });
 app.get("/doctors", async (req, res) => {
-  
+
   try {
     const query = "select * from doctors_details;";
     const doctorResults = await new Promise((resolve, reject) => {
@@ -1971,7 +1977,7 @@ app.get("/doctors", async (req, res) => {
           console.error("Error retrieving data: " + err.message);
           reject(err);
         } else {
-       
+
           resolve(result);
         }
       });
@@ -2014,7 +2020,7 @@ app.get("/specializes-doctors", async (req, res) => {
           console.error("Error retrieving data: " + err.message);
           reject(err);
         } else {
-        
+
           resolve(result);
         }
       });
@@ -2030,7 +2036,7 @@ app.get("/specializes-doctors", async (req, res) => {
 
 app.get("/product/:location", (req, res) => {
   const location = req.params.location;
-  
+
   const sql =
     "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.City = ?;";
 
@@ -2497,7 +2503,7 @@ app.get("/orders", (req, res) => {
         "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN carttable ON product.product_id = carttable.product_id JOIN user_tbl ON carttable.user_id = user_tbl.id AND carttable.user_id = ?;";
       const sql2 =
         "SELECT  product.product_id FROM product INNER JOIN carttable ON product.product_id = carttable.product_id JOIN user_tbl ON carttable.user_id = user_tbl.id AND carttable.user_id = ?;";
-     
+
       db.query(sql1, [user_id], (err, data) => {
         if (err) {
           return res.json(err);
@@ -2514,7 +2520,7 @@ app.get("/orders", (req, res) => {
         "SELECT  product_name , phone, product_price , cart_id,quantity FROM product INNER JOIN carttable ON product.product_id = carttable.product_id JOIN user_tbl ON carttable.user_id = user_tbl.id AND carttable.user_id = ?;";
       const sql2 =
         "SELECT  product.product_id FROM product INNER JOIN carttable ON product.product_id = carttable.product_id JOIN user_tbl ON carttable.user_id = user_tbl.id AND carttable.user_id = ?;";
-      
+
       db.query(sql1, [user_id], (err, data) => {
         if (err) {
           return res.json(err);
@@ -2535,7 +2541,7 @@ app.get("/orders", (req, res) => {
 // API endpoint to retrieve available coupons based on total and category
 app.post("/cart/get-coupons", (req, res) => {
   const totalAmount = req.body.amount;
- 
+
   const sql1 = "SELECT  * FROM coupon where min_order_amount <= ?";
   db.query(sql1, [totalAmount], (err, data) => {
     if (err) {
@@ -3044,13 +3050,13 @@ app.delete("/orders/:id", async (req, res) => {
       if (err) {
         reject(err);
       } else {
-     
+
         if (result[0].id !== orderId) {
           return res.status(404).json({ message: "Order not found" });
         }
 
-       if (!canCancelOrder(result[0])) {
-            return res.json(null);
+        if (!canCancelOrder(result[0])) {
+          return res.json(null);
         }
 
         // Remove the order from the array (or mark it as canceled in the database)
@@ -3132,7 +3138,7 @@ app.delete("/remove/cart/product/:id", async (req, res) => {
   } else {
     res.send(500, "data not found");
   }
-  
+
 });
 
 app.patch("/profile", (req, res) => {
@@ -3995,6 +4001,28 @@ app.get("/superadmin/partner", (req, res) => {
     res.status(500).send("data not found");
   }
 });
+//This for all B2BEmployee Data
+app.get("/superadmin/b2b/employee", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 = "select * from b2b_employee;";
+
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        // console.log(data)
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
 //This for all Delivery Partners Data
 app.get("/superadmin/delivery_partner", (req, res) => {
   if (req.session.user) {
@@ -4648,10 +4676,24 @@ app.post("/sub_admin/complete_profile", async (req, res) => {
           // console.log('success details')
           resolve(result.insertId);
           // return res.json('success')
-          return res.json("success");
+          if (req.session.user) {
+            if (req.session.user.role === 'b2b_employee') {
+              return res.json("success by b2b_employee");
+
+            } else {
+              return res.json("success by admin");
+            }
+
+          } else {
+            return res.json("success");
+
+          }
         }
       });
     });
+
+
+
   } catch (error) {
     console.log(error);
   }
@@ -4677,7 +4719,7 @@ app.post("/sub-admin/login", (req, res) => {
               return res.json(err);
             }
             if (response) {
-              
+
               req.session.loggedIn = true; // Set a session variable
               // req.session.phone = data[0].phone; // Store user information in the session
               req.session.user = data[0];
@@ -4723,6 +4765,23 @@ app.post("/superadmin/partner/accept/:partner_id", (req, res) => {
   const sql = "UPDATE b2c_partner SET permission = ? WHERE id = ?";
 
   db.query(sql, ["Approved", partner_id], (err) => {
+    if (err) {
+      console.error("Error updating order status:", err);
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
+
+    res.json({ message: "Permission Garented" });
+  });
+});
+// Route for super admin to Give Permission to an Partner
+app.post("/superadmin/b2b/employee/accept/:emp_id", (req, res) => {
+  const emp_id = req.params.emp_id;
+
+  // Update the order status in the database to indicate acceptance
+  const sql = "UPDATE b2b_employee SET permission = ? WHERE id = ?";
+
+  db.query(sql, ["Approved", emp_id], (err) => {
     if (err) {
       console.error("Error updating order status:", err);
       res.status(500).json({ error: "Internal server error" });
@@ -4798,7 +4857,7 @@ app.get("/madicine/medicineshops", async (req, res) => {
       .json({ error: "Error retrieving product details from the database" });
   }
 
- 
+
 });
 
 // All Labs
@@ -4896,7 +4955,7 @@ app.get("/particular-laboratory/:client_id", async (req, res) => {
       .json({ error: "Error retrieving product details from the database" });
   }
 
- 
+
 });
 
 //All Lab Tests
@@ -4945,7 +5004,7 @@ app.get("/laboratory/lab_tests", async (req, res) => {
       .json({ error: "Error retrieving product details from the database" });
   }
 
-  
+
 });
 app.get("/book/lab-test/:id", async (req, res) => {
   const Test_id = req.params.id;
@@ -5435,19 +5494,38 @@ app.get("/sub-admin/orders", (req, res) => {
 app.get("/sub-admin/own/orders", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
-    const sql1 =
-      " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id   where b2b_orders.sub_admin_id = ?";
-    db.query(sql1, [user_id], (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      if (data.length > 0) {
-        //  res.json("Success");
-        return res.json(data);
-      } else {
-        return res.json(null);
-      }
-    });
+
+    const user = req.session.user;
+    if (user.role === "b2b_employee") {
+      const sql1 =
+        " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id   where b2b_orders.b2b_employee_id = ?";
+      db.query(sql1, [user_id], (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        if (data.length > 0) {
+          //  res.json("Success");
+          return res.json(data);
+        } else {
+          return res.json(null);
+        }
+      });
+    } else {
+      const sql1 =
+        " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id   where b2b_orders.sub_admin_id = ?";
+      db.query(sql1, [user_id], (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        if (data.length > 0) {
+          //  res.json("Success");
+          return res.json(data);
+        } else {
+          return res.json(null);
+        }
+      });
+
+    }
   } else {
     res.status(500).send("data not found");
   }
@@ -5528,9 +5606,9 @@ app.get("/sub-admin/orders/order/:order_id", async (req, res) => {
   console.log(productResults);
   let total_amount = 0;
   let total_discount = 0;
-  
+
   return res.json([productResults]);
- 
+
 });
 app.get("/sub-admin/orders/customer/:customer_id", (req, res) => {
   const user_id = req.params.customer_id;

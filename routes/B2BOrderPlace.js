@@ -4,51 +4,79 @@ const router = express.Router();
 const db = require('../DB_Con.js');
 
 router.post('/b2b/orders', async (req, res) => {
-
-
     if (req.session.user) {
-        try {
-            // const { userId, product, orderDetails } = req.body;
-            const userId = req.session.user.id;
-            const user_id = req.session.user.id;
-            // const date = new Date().toISOString().split('T')[0];
-            // const date = new Date().toISOString();
-            const date = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
 
-            console.log(date)
-            const total_amount = req.body.total_amount;
-            const payment_type = req.body.payment_type;
-            console.log(req.body)
-            // Create the order
-            const createOrder = await new Promise((resolve, reject) => {
-                const sql2 = "INSERT INTO b2b_orders (sub_admin_id, order_date, status) VALUES (?, ?, 'pending');";
-                db.query(sql2, [user_id, date], (err, result) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(result.insertId); // Get the newly inserted order ID
-                    }
+        const user = req.session.user;
+        // console.log(req.session.user)
+        if (user.role === 'b2b_employee') {
+            try {
+                // const { userId, product, orderDetails } = req.body;
+                const userId = req.session.user.id;
+                const user_id = req.session.user.id;
+                // const date = new Date().toISOString().split('T')[0];
+                // const date = new Date().toISOString();
+                const date = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+
+                // console.log(date)
+                const total_amount = req.body.total_amount;
+                const payment_type = req.body.payment_type;
+                // console.log(req.body)
+
+                const query = "select sub_admin_id from b2b_carttable where b2b_carttable.b2b_employee_id = ?;";
+                const subAdmins = await new Promise((resolve, reject) => {
+                    db.query(query, [user_id], (err, result) => {
+                        if (err) {
+                            console.error("Error retrieving data: " + err.message);
+                            reject(err);
+                        } else {
+                            // console.log('Data retrieved successfully');
+                            resolve(result);
+                        }
+                    });
                 });
-            });
-
-            // Get the product IDs and quantities from the user's cart
-            const productInfo = await new Promise((resolve, reject) => {
-                const sql1 = "SELECT b2b_product.product_id, b2b_carttable.quantity FROM b2b_product INNER JOIN b2b_carttable ON b2b_product.product_id = b2b_carttable.product_id AND b2b_carttable.sub_admin_id = ?;";
-                db.query(sql1, [user_id], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows);
-                    }
+                const sub_admin_id = subAdmins[0].sub_admin_id;
+                // Create the order
+                const createOrder = await new Promise((resolve, reject) => {
+                    const sql2 = "INSERT INTO b2b_orders (sub_admin_id, order_date, status,order_by,b2b_employee_id) VALUES (?, ?, 'pending','b2b_employee',?);";
+                    db.query(sql2, [sub_admin_id, date,user_id], (err, result) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(result.insertId); // Get the newly inserted order ID
+                        }
+                    });
                 });
-            });
 
-            // Insert order items with quantities
-            const insertOrderItems = await Promise.all(productInfo.map(product => {
-                const { product_id, quantity } = product;
-                const sql4 = "INSERT INTO b2b_order_items (order_id, product_id, quantity) VALUES (?, ?, ?);";
-                return new Promise((resolve, reject) => {
-                    db.query(sql4, [createOrder, product_id, quantity], (err, result) => {
+                // Get the product IDs and quantities from the user's cart
+                const productInfo = await new Promise((resolve, reject) => {
+                    const sql1 = "SELECT b2b_product.product_id, b2b_carttable.quantity FROM b2b_product INNER JOIN b2b_carttable ON b2b_product.product_id = b2b_carttable.product_id AND b2b_carttable.b2b_employee_id = ?;";
+                    db.query(sql1, [user_id], (err, rows) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(rows);
+                        }
+                    });
+                });
+
+                // Insert order items with quantities
+                const insertOrderItems = await Promise.all(productInfo.map(product => {
+                    const { product_id, quantity } = product;
+                    const sql4 = "INSERT INTO b2b_order_items (order_id, product_id, quantity) VALUES (?, ?, ?);";
+                    return new Promise((resolve, reject) => {
+                        db.query(sql4, [createOrder, product_id, quantity], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                }));
+
+                const createPayment = await new Promise((resolve, reject) => {
+                    const sql4 = "INSERT INTO b2b_payments (order_id, payment_date,total_amount,payment_status,payment_type) VALUES (?, ?,?,?,?);";
+                    db.query(sql4, [createOrder, date, total_amount, 'pending', payment_type], (err, result) => {
                         if (err) {
                             reject(err);
                         } else {
@@ -56,25 +84,119 @@ router.post('/b2b/orders', async (req, res) => {
                         }
                     });
                 });
-            }));
 
-            const createPayment = await new Promise((resolve, reject) => {
-                const sql4 = "INSERT INTO b2b_payments (order_id, payment_date,total_amount,payment_status,payment_type) VALUES (?, ?,?,?,?);";
-                db.query(sql4, [createOrder, date, total_amount, 'pending', payment_type], (err, result) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(result);
-                    }
+                // decrease items from the anctual Quantity
+                const decreaseQuantity = await Promise.all(productInfo.map(product => {
+                    const { product_id, quantity } = product;
+                    const sql5 = "UPDATE b2b_product SET product_quantity = product_quantity - ? WHERE product_id = ?;";
+                    return new Promise((resolve, reject) => {
+                        db.query(sql5, [quantity, product_id], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                }));
+
+                // Add to User table that how many time he orders
+                const OrderCountInUserTable = await new Promise((resolve, reject) => {
+                    // const sql = "select  OrderCount from user_tbl WHERE id = ?;";
+
+                    const sql2 = "UPDATE b2b_employee SET ordercount = ordercount + 1 WHERE id = ?;";
+
+                    db.query(sql2, [userId], (err, result) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(result);
+                        }
+                    });
+
                 });
-            });
 
-            // decrease items from the anctual Quantity
-            const decreaseQuantity = await Promise.all(productInfo.map(product => {
-                const { product_id, quantity } = product;
-                const sql5 = "UPDATE b2b_product SET product_quantity = product_quantity - ? WHERE product_id = ?;";
-                return new Promise((resolve, reject) => {
-                    db.query(sql5, [quantity, product_id], (err, result) => {
+                const deleteCartItems = await Promise.all(productInfo.map(product => {
+                    const { product_id, quantity } = product;
+                    const sql5 = "DELETE FROM b2b_carttable WHERE b2b_employee_id = ? AND product_id = ?;";
+                    return new Promise((resolve, reject) => {
+                        db.query(sql5, [user_id, product_id], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                }));
+                // After processing the order, notify the super admin and sub-admins.
+                // io.emit('new-order', 'A new order has been placed.');
+
+                res.json("success");
+                // res.json("success",{ message: 'Order placed successfully.' });
+            } catch (error) {
+                console.error(error);
+                res.status(500).json(error.message);
+            }
+
+
+        } else {
+
+
+            try {
+                // const { userId, product, orderDetails } = req.body;
+                const userId = req.session.user.id;
+                const user_id = req.session.user.id;
+                // const date = new Date().toISOString().split('T')[0];
+                // const date = new Date().toISOString();
+                const date = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+
+                // console.log(date)
+                const total_amount = req.body.total_amount;
+                const payment_type = req.body.payment_type;
+                console.log(req.body)
+                // Create the order
+                const createOrder = await new Promise((resolve, reject) => {
+                    const sql2 = "INSERT INTO b2b_orders (sub_admin_id, order_date, status,order_by) VALUES (?, ?, 'pending',sub_admin);";
+                    db.query(sql2, [user_id, date], (err, result) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(result.insertId); // Get the newly inserted order ID
+                        }
+                    });
+                });
+
+                // Get the product IDs and quantities from the user's cart
+                const productInfo = await new Promise((resolve, reject) => {
+                    const sql1 = "SELECT b2b_product.product_id, b2b_carttable.quantity FROM b2b_product INNER JOIN b2b_carttable ON b2b_product.product_id = b2b_carttable.product_id AND b2b_carttable.sub_admin_id = ?;";
+                    db.query(sql1, [user_id], (err, rows) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(rows);
+                        }
+                    });
+                });
+
+                // Insert order items with quantities
+                const insertOrderItems = await Promise.all(productInfo.map(product => {
+                    const { product_id, quantity } = product;
+                    const sql4 = "INSERT INTO b2b_order_items (order_id, product_id, quantity) VALUES (?, ?, ?);";
+                    return new Promise((resolve, reject) => {
+                        db.query(sql4, [createOrder, product_id, quantity], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                }));
+
+                const createPayment = await new Promise((resolve, reject) => {
+                    const sql4 = "INSERT INTO b2b_payments (order_id, payment_date,total_amount,payment_status,payment_type) VALUES (?, ?,?,?,?);";
+                    db.query(sql4, [createOrder, date, total_amount, 'pending', payment_type], (err, result) => {
                         if (err) {
                             reject(err);
                         } else {
@@ -82,46 +204,62 @@ router.post('/b2b/orders', async (req, res) => {
                         }
                     });
                 });
-            }));
 
-            // Add to User table that how many time he orders
-            const OrderCountInUserTable = await new Promise((resolve, reject) => {
-                // const sql = "select  OrderCount from user_tbl WHERE id = ?;";
+                // decrease items from the anctual Quantity
+                const decreaseQuantity = await Promise.all(productInfo.map(product => {
+                    const { product_id, quantity } = product;
+                    const sql5 = "UPDATE b2b_product SET product_quantity = product_quantity - ? WHERE product_id = ?;";
+                    return new Promise((resolve, reject) => {
+                        db.query(sql5, [quantity, product_id], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                }));
 
-                const sql2 = "UPDATE sub_admin SET OrderCount = OrderCount + 1 WHERE id = ?;";
+                // Add to User table that how many time he orders
+                const OrderCountInUserTable = await new Promise((resolve, reject) => {
+                    // const sql = "select  OrderCount from user_tbl WHERE id = ?;";
 
-                db.query(sql2, [userId], (err, result) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(result);
-                    }
-                });
+                    const sql2 = "UPDATE sub_admin SET OrderCount = OrderCount + 1 WHERE id = ?;";
 
-            });
-
-            const deleteCartItems = await Promise.all(productInfo.map(product => {
-                const { product_id, quantity } = product;
-                const sql5 = "DELETE FROM b2b_carttable WHERE sub_admin_id = ? AND product_id = ?;";
-                return new Promise((resolve, reject) => {
-                    db.query(sql5, [user_id, product_id], (err, result) => {
+                    db.query(sql2, [userId], (err, result) => {
                         if (err) {
                             reject(err);
                         } else {
                             resolve(result);
                         }
                     });
-                });
-            }));
-            // After processing the order, notify the super admin and sub-admins.
-            // io.emit('new-order', 'A new order has been placed.');
 
-            res.json("success");
-            // res.json("success",{ message: 'Order placed successfully.' });
-        } catch (error) {
-            console.error(error);
-            res.status(500).json(error.message);
+                });
+
+                const deleteCartItems = await Promise.all(productInfo.map(product => {
+                    const { product_id, quantity } = product;
+                    const sql5 = "DELETE FROM b2b_carttable WHERE sub_admin_id = ? AND product_id = ?;";
+                    return new Promise((resolve, reject) => {
+                        db.query(sql5, [user_id, product_id], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                }));
+                // After processing the order, notify the super admin and sub-admins.
+                // io.emit('new-order', 'A new order has been placed.');
+
+                res.json("success");
+                // res.json("success",{ message: 'Order placed successfully.' });
+            } catch (error) {
+                console.error(error);
+                res.status(500).json(error.message);
+            }
         }
+
     } else {
         res.status(404).send("Data not found");
     }

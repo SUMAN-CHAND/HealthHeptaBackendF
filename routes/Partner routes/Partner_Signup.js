@@ -135,7 +135,6 @@ router.post('/partner/login', (req, res) => {
         }
         if (data.length > 0) {
             // console.log(data)
-
             if (data[0].permission === 'Pending') {
                 return res.json('Not_Approve');
             } else {
