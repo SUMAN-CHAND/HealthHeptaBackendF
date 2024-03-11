@@ -132,7 +132,9 @@ router.post('/b2b/orders', async (req, res) => {
                 // After processing the order, notify the super admin and sub-admins.
                 // io.emit('new-order', 'A new order has been placed.');
 
-                res.json("success");
+                // res.json("success");
+                res.json([createOrder, productInfo]);
+
                 // res.json("success",{ message: 'Order placed successfully.' });
             } catch (error) {
                 console.error(error);
@@ -157,7 +159,7 @@ router.post('/b2b/orders', async (req, res) => {
                 console.log(req.body)
                 // Create the order
                 const createOrder = await new Promise((resolve, reject) => {
-                    const sql2 = "INSERT INTO b2b_orders (sub_admin_id, order_date, status,order_by) VALUES (?, ?, 'pending',sub_admin);";
+                    const sql2 = "INSERT INTO b2b_orders (sub_admin_id, order_date, status,order_by) VALUES (?, ?, 'pending','sub_admin');";
                     db.query(sql2, [user_id, date], (err, result) => {
                         if (err) {
                             reject(err);
@@ -252,7 +254,9 @@ router.post('/b2b/orders', async (req, res) => {
                 // After processing the order, notify the super admin and sub-admins.
                 // io.emit('new-order', 'A new order has been placed.');
 
-                res.json("success");
+                // res.json("success");
+                res.json([createOrder, productInfo]);
+
                 // res.json("success",{ message: 'Order placed successfully.' });
             } catch (error) {
                 console.error(error);

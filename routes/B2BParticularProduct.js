@@ -47,13 +47,13 @@ router.get('/b2b/addtocart/:product_id', async (req, res) => {
 })
 
 //Add to Cart Route
-router.post('/b2b/addtocart/:product_id/:quantity', (req, res) => {
+router.post('/b2b/addtocart/:product_id/:quantity', async (req, res) => {
     if (req.session.user) {
         const user = req.session.user;
         // console.log(req.session.user)
         if (user.role === 'b2b_employee') {
             // console.log(user.role)
-            
+
             const product_id = parseInt(req.params.product_id);
             const quantity = parseInt(req.params.quantity);
             const b2b_employee_id = parseInt(req.session.user.id);
@@ -65,21 +65,48 @@ router.post('/b2b/addtocart/:product_id/:quantity', (req, res) => {
             ]
             // console.log(product)
 
-            try {
-                // Insert the product into the database
-                db.query('insert into b2b_carttable (`product_id`,`quantity`,`b2b_employee_id`) values (?,?,?);', product, (err, result) => {
+            const productInfo = await new Promise((resolve, reject) => {
+                const findproduct =
+                    "select * from b2b_carttable where product_id = ? and b2b_employee_id = ?";
+                db.query(
+                    findproduct,
+                    [req.params.product_id, req.session.user.id],
+                    (err, rows) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(rows);
+                        }
+                    }
+                );
+            });
+            if (productInfo.length > 0) {
+                const sql =
+                    "UPDATE b2b_carttable SET quantity = quantity+1 WHERE product_id = ? and b2b_employee_id = ?;";
+                db.query(
+                    sql,
+                    [req.params.product_id, req.session.user.id],
+                    (err, data) => {
+                        if (err) {
+                            console.log(err);
+                            return res.json(err);
+                        }
+                        return res.json(data);
+                    }
+                );
+            } else {
+                const sql =
+                    "insert into b2b_carttable (`product_id`,`quantity`,`b2b_employee_id`) values (?);";
+                db.query(sql, [product], (err, data) => {
                     if (err) {
                         console.log(err);
-                        res.status(500).json({ error: 'Failed to add the product to CART' });
-                    } else {
-                        // console.log('Product added successfully');
-                        res.status(200).json({ message: 'Product added to CART successfully' });
+                        return res.json(err);
                     }
+                    return res.json(data);
                 });
-            } catch (err) {
-                console.error('Error while processing the request: ' + err.message);
-                res.status(500).json({ error: 'An error occurred while processing the request' });
             }
+
+            
 
         } else {
 
@@ -94,23 +121,47 @@ router.post('/b2b/addtocart/:product_id/:quantity', (req, res) => {
                 sub_admin_id
             ]
             // console.log(product)
-
-            try {
-                // Insert the product into the database
-                db.query('insert into b2b_carttable (`product_id`,`quantity`,`sub_admin_id`) values (?,?,?);', product, (err, result) => {
+            const productInfo = await new Promise((resolve, reject) => {
+                const findproduct =
+                    "select * from b2b_carttable where product_id = ? and sub_admin_id = ?";
+                db.query(
+                    findproduct,
+                    [req.params.product_id, req.session.user.id],
+                    (err, rows) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(rows);
+                        }
+                    }
+                );
+            });
+            if (productInfo.length > 0) {
+                const sql =
+                    "UPDATE b2b_carttable SET quantity = quantity+1 WHERE product_id = ? and sub_admin_id = ?;";
+                db.query(
+                    sql,
+                    [req.params.product_id, req.session.user.id],
+                    (err, data) => {
+                        if (err) {
+                            console.log(err);
+                            return res.json(err);
+                        }
+                        return res.json(data);
+                    }
+                );
+            } else {
+                const sql =
+                    "insert into b2b_carttable (`product_id`,`quantity`,`sub_admin_id`) values (?);";
+                db.query(sql, [product], (err, data) => {
                     if (err) {
                         console.log(err);
-                        res.status(500).json({ error: 'Failed to add the product to CART' });
-                    } else {
-                        // console.log('Product added successfully');
-                        res.status(200).json({ message: 'Product added to CART successfully' });
+                        return res.json(err);
                     }
+                    return res.json(data);
                 });
-            } catch (err) {
-                console.error('Error while processing the request: ' + err.message);
-                res.status(500).json({ error: 'An error occurred while processing the request' });
             }
-
+            
         }
     } else {
         return res.json(null);
@@ -124,7 +175,7 @@ router.post('/b2b/add/subadmin/:subadmin_id', (req, res) => {
         // console.log(req.session.user)
         if (user.role === 'b2b_employee') {
             // console.log(user.role)
-            
+
             const sub_admin_id = parseInt(req.params.subadmin_id);
             // const quantity = parseInt(req.params.quantity);
             const b2b_employee_id = parseInt(req.session.user.id);
@@ -152,7 +203,7 @@ router.post('/b2b/add/subadmin/:subadmin_id', (req, res) => {
             }
 
         }
-         
+
     } else {
         return res.json(null);
     }

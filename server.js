@@ -3898,7 +3898,7 @@ app.get("/superadmin/orders", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " SELECT orders.id,orders.role, product.product_id , user_id,order_date,status,payment_status,payment_type,expected_delivery_date  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id  ";
+      " SELECT orders.id,orders.role, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id ;";
     db.query(sql1, (err, data) => {
       if (err) {
         return res.json(err);
@@ -5078,43 +5078,49 @@ app.get("/madicine/medicineshops/:location", (req, res) => {
 app.get("/sub-admin/home/profile", async (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
-    const sql =
-      "SELECT  sub_admin.id ,name ,phone ,role,SubAdminImageId,LicenceImageId,address_sub_admin.address_id ,Village ,P_O,City,district,State,pin_code  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id and sub_admin.id = ?;";
-    const sql1 =
-      "SELECT  id ,name ,phone ,role FROM sub_admin where sub_admin.id = ?;";
+    const user = req.session.user;
+    if (user.role === "b2b_employee") {
 
-    db.query(sql, [user_id], (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      if (data.length > 0) {
-        const sql = "SELECT * FROM images where id = ?";
+    } else {
+      const sql =
+        "SELECT  sub_admin.id ,name ,phone ,role,SubAdminImageId,LicenceImageId,address_sub_admin.address_id ,Village ,P_O,City,district,State,pin_code  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id and sub_admin.id = ?;";
+      const sql1 =
+        "SELECT  id ,name ,phone ,role FROM sub_admin where sub_admin.id = ?;";
 
-        db.query(sql, [data[0].SubAdminImageId], (err, result) => {
-          if (err) {
-            console.error("Database error: " + err);
-            res.status(500).json({ error: "Database error." });
-          } else {
-            // res.json(result);
-            return res.json([data[0], true, result]);
-          }
-        });
+      db.query(sql, [user_id], (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        if (data.length > 0) {
+          const sql = "SELECT * FROM images where id = ?";
 
-        //  res.json("Success");
-      } else {
-        db.query(sql1, [user_id], (err, data) => {
-          if (err) {
-            return res.json(err);
-          }
-          if (data.length > 0) {
-            //  res.json("Success");
-            return res.json([data[0], false]);
-          } else {
-            return res.json("Faile");
-          }
-        });
-      }
-    });
+          db.query(sql, [data[0].SubAdminImageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              res.status(500).json({ error: "Database error." });
+            } else {
+              // res.json(result);
+              return res.json([data[0], true, result]);
+            }
+          });
+
+          //  res.json("Success");
+        } else {
+          db.query(sql1, [user_id], (err, data) => {
+            if (err) {
+              return res.json(err);
+            }
+            if (data.length > 0) {
+              //  res.json("Success");
+              return res.json([data[0], false]);
+            } else {
+              return res.json("Faile");
+            }
+          });
+        }
+      });
+    }
+
   }
 });
 
@@ -5585,6 +5591,7 @@ app.get("/sub-admin/orders/product/:product_id", (req, res) => {
     res.json(data);
   });
 });
+
 // Route for super admin to view product details
 app.get("/sub-admin/orders/order/:order_id", async (req, res) => {
   const order_id = req.params.order_id;
@@ -5603,7 +5610,33 @@ app.get("/sub-admin/orders/order/:order_id", async (req, res) => {
       }
     });
   });
-  console.log(productResults);
+  // console.log(productResults);
+  let total_amount = 0;
+  let total_discount = 0;
+
+  return res.json([productResults]);
+
+});
+
+// Route for super admin to view product details
+app.get("/b2b/sub-admin/orders/order/:order_id", async (req, res) => {
+  const order_id = req.params.order_id;
+
+  // View Product details by id
+  const sql =
+    "SELECT b2b_orders.id, b2b_product.product_id , discount,sub_admin_id,order_date,status,payment_status,payment_type,product_name,product_price,description,quantity,sgst,cgst  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id where b2b_orders.id = ?;";
+  const productResults = await new Promise((resolve, reject) => {
+    db.query(sql, [order_id], (err, result) => {
+      if (err) {
+        console.error("Error retrieving data: " + err.message);
+        reject(err);
+      } else {
+        // console.log('Data retrieved successfully');
+        resolve(result);
+      }
+    });
+  });
+  // console.log(productResults);
   let total_amount = 0;
   let total_discount = 0;
 
