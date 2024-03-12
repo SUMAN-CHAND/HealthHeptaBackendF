@@ -3216,7 +3216,7 @@ app.patch("/profile/address", async (req, res) => {
 app.post("/profile/address", async (req, res) => {
   if (req.session.user) {
     const sql =
-      "insert into address (Village,P_O,City,district,state,pin_code,user_id)values(?,?,?,?,?,?,?);";
+      "insert into address (Village,P_O,City,district,state,pin_code,user_id,primaryAddress)values(?,?,?,?,?,?,?,'primary');";
     const user_id = req.session.user.id;
     // var user_id = 2;
     const values = [
