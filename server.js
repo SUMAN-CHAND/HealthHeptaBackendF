@@ -6422,7 +6422,7 @@ app.post("/upload/prescription", (req, res) => {
           path: `uploads/${filename}`,
         };
 
-        const sql = "INSERT INTO Prescription SET ?";
+        const sql = "INSERT INTO prescription SET ?";
 
         db.query(sql, imageInfo, (dbErr, result) => {
           if (dbErr) {
@@ -6472,7 +6472,7 @@ app.get("/images/banner", (req, res) => {
 });
 
 app.get("/images/prescription", (req, res) => {
-  const sql = "SELECT * FROM Prescription";
+  const sql = "SELECT * FROM prescription";
 
   db.query(sql, [lastInsertedImageId], (err, result) => {
     if (err) {
