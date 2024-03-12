@@ -1256,7 +1256,7 @@ app.post("/search", async (req, res) => {
   } else {
     likefiled = req.body.input[0];
   }
-  // console.log(likefiled)
+  console.log(likefiled)
   const input = `%${likefiled}%`;
 
   //This is for Product
@@ -3898,7 +3898,7 @@ app.get("/superadmin/orders", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " SELECT orders.id,orders.role, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id ;";
+      " SELECT orders.id,orders.role, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id ;";
     db.query(sql1, (err, data) => {
       if (err) {
         return res.json(err);
@@ -4482,20 +4482,26 @@ app.post("/superadmin/update/order", (req, res) => {
     (assigndeliverypersion = req.body.assigndeliverypersion),
   ];
   // Update the order Delivery Date in the database to indicate acceptance
+  const user_id = req.session.user.id;
+  // const user_name = req.session.user.name;
+
   const sql =
-    "UPDATE `orders` SET `expected_delivery_date` = ? , `status` = ? , `assign_delivery_persion_id` = ?  WHERE `id` = ?;";
+    "UPDATE `orders` SET `expected_delivery_date` = ? , `status` = ? , `assign_delivery_persion_id` = ?, `orderAcceptedBy` = 'superadmin', `order_Accepted_SubAdmin_Id` = ?   WHERE `id` = ?;";
   try {
     db.query(
       sql,
-      [expected_delivery_date, orderstatus, assigndeliverypersion, order_id],
+      [expected_delivery_date, orderstatus, assigndeliverypersion, user_id, order_id],
       (err) => {
         if (err) {
           console.error("Error updating order status:", err);
           res.status(500).json({ error: "Internal server error" });
-          return;
-        }
+          res.json(null);
+        } if (data.changedRows > 0) {
+          res.json("success");
+        } else {
+          res.json(null);
 
-        res.json("success");
+        }
       }
     );
   } catch (error) {
@@ -5479,7 +5485,7 @@ app.get("/sub-admin/orders", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?";
+      " SELECT orders.id, product.product_id,product_name , user_id,user_tbl.name,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id  where order_sub_admin.sub_admin_id = ?;";
     db.query(sql1, [user_id], (err, data) => {
       if (err) {
         return res.json(err);
@@ -5619,6 +5625,32 @@ app.get("/sub-admin/orders/order/:order_id", async (req, res) => {
 });
 
 // Route for super admin to view product details
+app.get("/superadmin/b2b/orders/order/:order_id", async (req, res) => {
+  const order_id = req.params.order_id;
+
+  // View Product details by id
+  const sql =
+    "SELECT b2b_orders.id, b2b_product.product_id , discount,sub_admin_id,order_date,status,payment_status,payment_type,product_name,product_price,description,quantity,sgst,cgst  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id where b2b_orders.id = ?;";
+  const productResults = await new Promise((resolve, reject) => {
+    db.query(sql, [order_id], (err, result) => {
+      if (err) {
+        console.error("Error retrieving data: " + err.message);
+        reject(err);
+      } else {
+        // console.log('Data retrieved successfully');
+        resolve(result);
+      }
+    });
+  });
+  // console.log(productResults);
+  let total_amount = 0;
+  let total_discount = 0;
+
+  return res.json([productResults]);
+
+});
+
+// Route for super admin to view product details
 app.get("/b2b/sub-admin/orders/order/:order_id", async (req, res) => {
   const order_id = req.params.order_id;
 
@@ -5643,12 +5675,46 @@ app.get("/b2b/sub-admin/orders/order/:order_id", async (req, res) => {
   return res.json([productResults]);
 
 });
+
+
 app.get("/sub-admin/orders/customer/:customer_id", (req, res) => {
   const user_id = req.params.customer_id;
 
   const sql =
     "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,pin_code FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ?;";
   const sql1 = "SELECT  id ,name ,phone  FROM user_tbl where user_tbl.id = ?;";
+
+  db.query(sql, [user_id], (err, data) => {
+    if (err) {
+      return res.json(err);
+    }
+    if (data.length > 0) {
+      //  res.json("Success");
+      return res.json([data[0]]);
+    } else {
+      db.query(sql1, [user_id], (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        if (data.length > 0) {
+          //  res.json("Success");
+          return res.json([data[0]]);
+        } else {
+          return res.json("Faile");
+        }
+      });
+    }
+  });
+});
+
+app.get("/superadmin/b2b/orders/customer/:customer_id", (req, res) => {
+  const user_id = req.params.customer_id;
+
+  // const sql =
+  //   "SELECT  id ,name ,phone , address_id ,Village ,P_O,City,district,State,pin_code FROM user_tbl INNER JOIN address ON user_tbl.id = address.user_id and user_tbl.id = ?;";
+  // const sql1 = "SELECT  id ,name ,phone  FROM user_tbl where user_tbl.id = ?;";
+  const sql = "SELECT  sub_admin.id ,name ,phone ,role,SubAdminImageId,LicenceImageId,address_sub_admin.address_id ,Village ,P_O,City,district,State,pin_code  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id and sub_admin.id = ?;";
+
 
   db.query(sql, [user_id], (err, data) => {
     if (err) {
@@ -6077,6 +6143,64 @@ app.get("/sub-admin/see-appoiment", (req, res) => {
     res.status(500).send("data not found");
   }
 });
+
+// Route for super admin to view product details
+app.get("/sub_admin/orders/order/:order_id", (req, res) => {
+  const order_id = req.params.order_id;
+
+  // View Product details by id
+  const sql =
+    "SELECT orders.id, product.product_id , user_id,order_date,status,payment_status,payment_type ,product_name,product_price,description,assign_delivery_persion_id,expected_delivery_date FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id where orders.id = ? ";
+
+  db.query(sql, [order_id], (err, data) => {
+    if (err) {
+      console.error("Error updating order status:", err);
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
+    // console.log(data);
+    res.json(data);
+  });
+});
+
+//update Order details
+app.post("/sub_admin/update/order", (req, res) => {
+  const values = [
+    (order_id = req.body.order_id),
+    (orderstatus = req.body.orderstatus),
+    (expected_delivery_date = req.body.expected_delivery_date),
+    (assigndeliverypersion = req.body.assigndeliverypersion),
+  ];
+  const user_id = req.session.user.id;
+  const user_name = req.session.user.name;
+
+  // Update the order Delivery Date in the database to indicate acceptance
+  const sql =
+    "UPDATE `orders` SET `expected_delivery_date` = ? , `status` = ? , `assign_delivery_persion_id` = ?, `orderAcceptedBy` = ? , `order_Accepted_SubAdmin_Id` = ?  WHERE `id` = ?;";
+  try {
+    db.query(
+      sql,
+      [expected_delivery_date, orderstatus, assigndeliverypersion, user_name, user_id, order_id],
+      (err, data) => {
+        if (err) {
+          console.error("Error updating order status:", err);
+          res.status(500).json({ error: "Internal server error" });
+          // return;
+          res.json(null);
+        }
+        if (data.changedRows > 0) {
+          res.json("success");
+        } else {
+          res.json(null);
+
+        }
+      }
+    );
+  } catch (error) {
+    res.status(500).sendStatus("Internal Server Error");
+  }
+});
+
 //view all spesific clinic lab booking
 app.get("/sub-admin/see-lab-bookings", (req, res) => {
   if (req.session.user) {
