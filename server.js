@@ -3898,7 +3898,7 @@ app.get("/superadmin/orders", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " SELECT orders.id,orders.role, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id ;";
+      " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id ;";
     db.query(sql1, (err, data) => {
       if (err) {
         return res.json(err);
@@ -4600,7 +4600,7 @@ app.post("/sub_admin/complete_profile", async (req, res) => {
   try {
     // const sql = "Insert into sub_admin (`LicenceImageId`,`SubAdminImageId`) values(?) where id = ?;";
     const sql =
-      "UPDATE sub_admin SET LicenceImageId = ?, SubAdminImageId= ? WHERE id = ?;";
+      "UPDATE sub_admin SET LicenceImageId = ?, SubAdminImageId= ? , owner_name = ? , owner_phonenumber=? WHERE id = ?;";
     // const values = [
     //     req.body.LicenceImageId,
     //     req.body.SubAdminImageId
@@ -4611,6 +4611,8 @@ app.post("/sub_admin/complete_profile", async (req, res) => {
         [
           req.body.LicenceImageId,
           req.body.SubAdminImageId,
+          req.body.owner_name,
+          req.body.owner_phonenumber,
           req.body.subadmin_id,
         ],
         (err, data) => {
