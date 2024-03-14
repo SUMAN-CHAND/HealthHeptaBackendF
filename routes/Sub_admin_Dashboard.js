@@ -401,13 +401,13 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
             }
         })
         //This is for total Orders  with in a week
-        const sql32 = "select COUNT(*) as no from Orders  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
-        const sql33 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
-        const sql34 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
-        const sql35 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
-        const sql36 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
-        const sql37 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
-        const sql38 = "select COUNT(*) as no from Orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
+        const sql32 = "select COUNT(*) as no from orders  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +0 DAY);";
+        const sql33 = "select COUNT(*) as no from orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +1 DAY);";
+        const sql34 = "select COUNT(*) as no from orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +2 DAY);";
+        const sql35 = "select COUNT(*) as no from orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +3 DAY);";
+        const sql36 = "select COUNT(*) as no from orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +4 DAY);";
+        const sql37 = "select COUNT(*) as no from orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +5 DAY);";
+        const sql38 = "select COUNT(*) as no from orders INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = '?' and  order_date = DATE_SUB(CURDATE(), INTERVAL +6 DAY);";
 
         db.query(sql32, (err, data) => {
             if (err) {
