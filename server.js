@@ -51,6 +51,7 @@ const myMap = require("./routes/Map/MyMap.js");
 // const videocall = require('./routes/VideoCallBackEnd.js')
 const e = require("express");
 const { error } = require("console");
+const { crypto } = require('crypto');
 
 app.use(
   cors({
@@ -68,13 +69,15 @@ app.use(express.json());
 const oneDay = 1000 * 60 * 60 * 24;
 // const server = http.createServer(app);
 // const io = socketIo(server);
+const secret = require('crypto').randomBytes(32).toString('hex');
 app.use(
   session({
-    secret: "1234567890abcdefghijklmnopqrstuvwxyz",
+    secret: secret,
     // resave: true,
     resave: false,
     saveUninitialized: true,
     proxy: true,
+    cookie: { secure: false, maxAge: 20 * 60 * 1000 } //  timeout. you can set any time limit 
   })
 );
 
@@ -1258,12 +1261,45 @@ app.post("/search", async (req, res) => {
   }
   console.log(likefiled)
   const input = `%${likefiled}%`;
+  // const input = %${likefiled}%;
 
   //This is for Product
   try {
     // const user_id = req.session.user.id;
-    const query =
-      "SELECT  sub_admin.id ,product_sub_admin.product_id as id ,name , address_sub_admin.address_id  ,City,product_name,typeOfMedicine,product.product_id,product_price,discount,description,phone,productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id where product.product_name Like ? Or product.category Like ? Or address.city Like ? Or name Like  ?  Or typeOfMedicine Like ?;";
+    // const query =
+    //   "SELECT  sub_admin.id ,product_sub_admin.product_id as id ,name , address_sub_admin.address_id  ,City,product_name,typeOfMedicine,product.product_id,product_price,discount,description,phone,productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id where product.product_name Like ? Or product.category Like ? Or address.city Like ? Or name Like  ?  Or typeOfMedicine Like ?;";
+
+    const query = `SELECT 
+    sub_admin.id,
+    product_sub_admin.product_id AS id,
+    name,
+    address_sub_admin.address_id,
+    City,
+    product_name,
+    typeOfMedicine,
+    product.product_id,
+    product_price,
+    discount,
+    description,
+    phone,
+    productImageId 
+FROM 
+    address_sub_admin 
+INNER JOIN 
+    address ON address_sub_admin.address_id = address.address_id  
+INNER JOIN 
+    sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id 
+INNER JOIN 
+    product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id 
+INNER JOIN 
+    product ON product_sub_admin.product_id = product.product_id 
+WHERE 
+    product.product_name LIKE CONCAT('%', ?, '%') 
+    OR product.category LIKE CONCAT('%', ?, '%') 
+    OR address.city LIKE CONCAT('%', ?, '%') 
+    OR name LIKE CONCAT('%', ?, '%') 
+    OR typeOfMedicine LIKE CONCAT('%', ?, '%');`;
+
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, [input, input, input, input, input], (err, result) => {
         if (err) {
@@ -1441,6 +1477,212 @@ app.post("/search", async (req, res) => {
 
   // res.json(results);
 });
+// app.post("/search", async (req, res) => {
+//   console.log(req.body);
+//   let likefiled;
+
+//   if (req.body.from === "category") {
+//     likefiled = req.body.input.toLowerCase();
+//   } else {
+//     likefiled = req.body.input[0].toLowerCase();
+//   }
+//   // req.body.input.toLowerCase();
+//   console.log(likefiled);
+//   const input = `% ${likefiled}%`;
+
+//   // likefiled = req.body.input.toLowerCase();
+//   console.log("Lowercase search term:", likefiled);
+
+
+
+
+//   //This is for Product
+//   try {
+//     const query =
+//       "SELECT sub_admin.id, product_sub_admin.product_id AS id, name, address_sub_admin.address_id, City, product_name, typeOfMedicine, product.product_id, product_price, discount, description, phone, productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id WHERE  LOWER(product_name) = ?      OR product.category LIKE ? OR address.city LIKE ? OR name LIKE ? OR typeOfMedicine LIKE ?";
+
+//     // const preparedStatement = db.prepare(query);
+//     // preparedStatement.bind([likefiled,likefiled,likefiled,likefiled,likefiled ]);  // Bind parameters
+//     // console.log("Final query:", preparedStatement.query);
+
+//     // const productResults = await preparedStatement.execute();
+//     // console.log("Database results:", productResults);
+
+//     const preparedStatement = await db.prepare(query); // Correct usage
+//     const results = await preparedStatement.execute([input, input, input, input, input]);
+//     connection.end();
+//     console.log(results)
+//     // const productResults = await new Promise((resolve, reject) => {
+//     //   db.query(query, [input, input, input, input, input], (err, result) => {
+//     //     if (err) {
+//     //       console.log(query)
+//     //       console.error("Error retrieving product data: " + err.message);
+//     //       reject(err);
+//     //     } else {
+//     //       console.log(query)
+//     //       resolve(result);
+//     //     }
+//     //   });
+//     // });
+//     let images;
+
+//     // Handle other queries similarly...let images;
+//     if (productResults.length > 0) {
+//       const imagesPromises = productResults.map((product) => {
+//         return new Promise((resolve, reject) => {
+//           const sql = "SELECT * FROM images WHERE id = ?";
+//           db.query(sql, [product.productImageId], (err, result) => {
+//             if (err) {
+//               console.error("Database error: " + err);
+//               reject(err);
+//             } else {
+//               // console.log(result[0]);
+//               resolve(result[0]);
+//             }
+//           });
+//         });
+//       });
+
+//       images = await Promise.all(imagesPromises);
+
+//     }
+//     //This is for Lab Test
+//     const query1 =
+//       "SELECT  sub_admin.id ,Test_id,Test_Name,Test_Desc,test_imageId,Price FROM address_sub_admin" +
+//       " INNER JOIN address ON address_sub_admin.address_id = address.address_id" +
+//       " INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id " +
+//       " INNER JOIN laboratory_tests_details ON laboratory_tests_details.clinic_id = sub_admin.id" +
+//       " where laboratory_tests_details.Test_Name Like ? Or address.city Like ? Or name Like  ?;";
+//     const LabResults = await new Promise((resolve, reject) => {
+//       db.query(query1, [input, input, input, input, input], (err, result) => {
+//         if (err) {
+//           console.error("Error retrieving data: " + err.message);
+//           reject(err);
+//         } else {
+//           // console.log('Data retrieved successfully');
+//           resolve(result);
+//         }
+//       });
+//     });
+//     let LabTestimages;
+//     if (LabResults.length > 0) {
+//       const imagesPromises = LabResults.map((lab) => {
+//         return new Promise((resolve, reject) => {
+//           const sql = "SELECT * FROM images WHERE id = ?";
+//           db.query(sql, [lab.test_imageId], (err, result) => {
+//             if (err) {
+//               console.error("Database error: " + err);
+//               reject(err);
+//             } else {
+//               // console.log(result[0]);
+//               resolve(result[0]);
+//             }
+//           });
+//         });
+//       });
+
+//       LabTestimages = await Promise.all(imagesPromises);
+//     }
+//     //This is for Doctors
+//     const query2 = `
+//         SELECT doctors_details.id,doc_name,doc_desc,location,clinic,clinic_id,clinic_desc,type,doctor_imageId,address.pin_code  from doctors_details
+//     INNER JOIN sub_admin ON sub_admin.id = doctors_details.clinic_id 
+//     INNER JOIN address_sub_admin ON address_sub_admin.sub_admin_id = sub_admin.id 
+//     INNER JOIN address ON address_sub_admin.sub_admin_id = address.address_id   
+//     where doc_name Like ?
+//     Or doc_desc Like ?
+//     Or specializes Like ? 
+//     Or location Like ? 
+//     Or pin_code Like ?`;
+//     const DoctorResults = await new Promise((resolve, reject) => {
+//       db.query(query2, [input, input, input, input, input], (err, result) => {
+//         if (err) {
+//           console.error("Error retrieving data: " + err.message);
+//           reject(err);
+//         } else {
+//           // console.log('Data retrieved successfully');
+//           resolve(result);
+//         }
+//       });
+//     });
+//     let Doctorimages;
+//     if (DoctorResults.length > 0) {
+//       const imagesPromises = DoctorResults.map((doctor) => {
+//         return new Promise((resolve, reject) => {
+//           const sql = "SELECT * FROM images WHERE id = ?";
+//           db.query(sql, [doctor.doctor_imageId], (err, result) => {
+//             if (err) {
+//               console.error("Database error: " + err);
+//               reject(err);
+//             } else {
+//               // console.log(result[0]);
+//               resolve(result[0]);
+//             }
+//           });
+//         });
+//       });
+
+//       Doctorimages = await Promise.all(imagesPromises);
+//     }
+//     const query3 = `
+//         SELECT sub_admin.id,name,Landmark,SubAdminImageId,address.pin_code  from sub_admin
+//         INNER JOIN address_sub_admin ON address_sub_admin.sub_admin_id = sub_admin.id 
+//         INNER JOIN sub_admin_details ON sub_admin_details.sub_admin_id = sub_admin.id 
+//         INNER JOIN address ON address_sub_admin.sub_admin_id = address.address_id   
+//         where name Like ?
+//         Or Landmark Like ?
+//         and role = 'Medicine Shop'
+//         and permission = 'Approve';`;
+//     const MedicineShops = await new Promise((resolve, reject) => {
+//       db.query(query3, [input, input], (err, result) => {
+//         if (err) {
+//           console.error("Error retrieving data: " + err.message);
+//           reject(err);
+//         } else {
+//           resolve(result);
+//         }
+//       });
+//     });
+//     let MedicineShopsImage;
+//     if (MedicineShops.length > 0) {
+//       const imagesPromises = MedicineShops.map((mshop) => {
+//         return new Promise((resolve, reject) => {
+//           const sql = "SELECT * FROM images WHERE id = ?";
+//           db.query(sql, [mshop.SubAdminImageId], (err, result) => {
+//             if (err) {
+//               console.error("Database error: " + err);
+//               reject(err);
+//             } else {
+//               resolve(result[0]);
+//             }
+//           });
+//         });
+//       });
+
+//       MedicineShopsImage = await Promise.all(imagesPromises);
+//     }
+
+
+//     console.log("Product Results:", productResults);
+//     // Handle other query results...
+
+//     return res.json([
+//       productResults,
+//       images,
+//       LabResults,
+//       LabTestimages,
+//       DoctorResults,
+//       Doctorimages,
+//       MedicineShops,
+//       MedicineShopsImage,
+//     ]);
+//   } catch (error) {
+//     console.error("Error: ", error);
+//     return res
+//       .status(500)
+//       .json({ error: "Error retrieving data from the database" });
+//   }
+// });
 
 app.post("/signup", async (req, res) => {
   const sql =
@@ -3580,7 +3822,7 @@ app.get("/superadmin/product/lowstock", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "SELECT COUNT(*) as no, sum(product_price*product_quantity) as price FROM product where product_quantity<=250;";
+      "SELECT COUNT(*) as no, sum(product_price*product_quantity) as price FROM product where product_quantity<=50;";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -3597,12 +3839,167 @@ app.get("/superadmin/product/lowstock", (req, res) => {
     res.status(500).send("data not found");
   }
 });
+//show the product which quantity is less then equal 250
+app.get("/superadmin/product-details/lowstock", async (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    try {
+      const user_id = req.session.user.id;
+      const query = "SELECT * FROM product where product_quantity<=50;";
+      const productResults = await new Promise((resolve, reject) => {
+        db.query(query, (err, result) => {
+          if (err) {
+            console.error("Error retrieving data: " + err.message);
+            reject(err);
+          } else {
+            // console.log('Data retrieved successfully');
+            resolve(result);
+          }
+        });
+      });
+
+      if (productResults.length > 0) {
+        const imagesPromises = productResults.map((product) => {
+          return new Promise((resolve, reject) => {
+            const sql = "SELECT * FROM images WHERE id = ?";
+            db.query(sql, [product.productImageId], (err, result) => {
+              if (err) {
+                console.error("Database error: " + err);
+                reject(err);
+              } else {
+                // console.log(result[0]);
+                resolve(result[0]);
+              }
+            });
+          });
+        });
+
+        const images = await Promise.all(imagesPromises);
+        // console.log(images);
+        return res.json([productResults, images]);
+      } else {
+        return res.json([]); // Return an empty response if no doctor details found
+      }
+    } catch (error) {
+      console.error("Error: ", error);
+      return res
+        .status(500)
+        .json({ error: "Error retrieving product details from the database" });
+    }
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+//show the product which about to expire
+app.get("/superadmin/product-details/expiring", async (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    try {
+      const user_id = req.session.user.id;
+      const query =
+        "  SELECT * FROM product where expiry < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and expiry > CURDATE();";
+      const productResults = await new Promise((resolve, reject) => {
+        db.query(query, (err, result) => {
+          if (err) {
+            console.error("Error retrieving data: " + err.message);
+            reject(err);
+          } else {
+            // console.log('Data retrieved successfully');
+            resolve(result);
+          }
+        });
+      });
+
+      if (productResults.length > 0) {
+        const imagesPromises = productResults.map((product) => {
+          return new Promise((resolve, reject) => {
+            const sql = "SELECT * FROM images WHERE id = ?";
+            db.query(sql, [product.productImageId], (err, result) => {
+              if (err) {
+                console.error("Database error: " + err);
+                reject(err);
+              } else {
+                // console.log(result[0]);
+                resolve(result[0]);
+              }
+            });
+          });
+        });
+
+        const images = await Promise.all(imagesPromises);
+        // console.log(images);
+        return res.json([productResults, images]);
+      } else {
+        return res.json([]); // Return an empty response if no doctor details found
+      }
+    } catch (error) {
+      console.error("Error: ", error);
+      return res
+        .status(500)
+        .json({ error: "Error retrieving product details from the database" });
+    }
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+//show the product which about to expired
+app.get("/superadmin/product-details/expired", async (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    try {
+      const user_id = req.session.user.id;
+      const query =
+        "SELECT * FROM product where expiry < CURDATE();";
+      const productResults = await new Promise((resolve, reject) => {
+        db.query(query, (err, result) => {
+          if (err) {
+            console.error("Error retrieving data: " + err.message);
+            reject(err);
+          } else {
+            // console.log('Data retrieved successfully');
+            resolve(result);
+          }
+        });
+      });
+
+      if (productResults.length > 0) {
+        const imagesPromises = productResults.map((product) => {
+          return new Promise((resolve, reject) => {
+            const sql = "SELECT * FROM images WHERE id = ?";
+            db.query(sql, [product.productImageId], (err, result) => {
+              if (err) {
+                console.error("Database error: " + err);
+                reject(err);
+              } else {
+                // console.log(result[0]);
+                resolve(result[0]);
+              }
+            });
+          });
+        });
+
+        const images = await Promise.all(imagesPromises);
+        // console.log(images);
+        return res.json([productResults, images]);
+      } else {
+        return res.json([]); // Return an empty response if no doctor details found
+      }
+    } catch (error) {
+      console.error("Error: ", error);
+      return res
+        .status(500)
+        .json({ error: "Error retrieving product details from the database" });
+    }
+  } else {
+    res.status(500).send("data not found");
+  }
+});
 //show the product which is expirying with in  1 month
 app.get("/superadmin/product/expirying_ptoduct", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "  SELECT COUNT(*) as no, sum(product_price*product_quantity) as price FROM product where expiry < DATE_SUB(CURDATE(), INTERVAL -1 MONTH);";
+      "  SELECT COUNT(*) as no, sum(product_price*product_quantity) as price FROM product where expiry < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and  expiry > CURDATE();;";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -3647,7 +4044,7 @@ app.get("/superadmin/product/purchase_monthly", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) and payments.payment_status = 'pending';";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -3670,7 +4067,7 @@ app.get("/superadmin/product/purchase_yearly", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 YEAR) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 YEAR)) and payments.payment_status = 'pending';";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -3710,6 +4107,28 @@ app.get("/superadmin/product/sales_monthly", (req, res) => {
     res.status(500).send("data not found");
   }
 });
+//show the product which is purchase with in  1 month
+app.get("/superadmin/sales/monthly", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 =
+      " SELECT  * FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) and payments.payment_status = 'complete';";
+
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
 
 //show the product which is sales with in  1 Year
 app.get("/superadmin/product/sales_yearly", (req, res) => {
@@ -3717,6 +4136,28 @@ app.get("/superadmin/product/sales_yearly", (req, res) => {
     const user_id = req.session.user.id;
     const sql1 =
       "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 YEAR) and payments.payment_status = 'complete';";
+
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+//show the product which is sales with in  1 Year
+app.get("/superadmin/sale/yearly", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 =
+      "SELECT * FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 YEAR)) and payments.payment_status = 'complete';";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -3899,6 +4340,68 @@ app.get("/superadmin/orders", (req, res) => {
     const user_id = req.session.user.id;
     const sql1 =
       " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id ;";
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        // console.log(data)
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+
+// super admin dashboard modal 
+app.get("/superadmin/orders/yearly", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 = `SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product 
+    INNER JOIN order_items ON product.product_id = order_items.product_id
+     INNER JOIN orders ON orders.id = order_items.order_id 
+     INNER JOIN payments ON orders.id = payments.order_id 
+     INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id
+     INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id 
+     INNER JOIN user_tbl ON orders.user_id = user_tbl.id 
+     where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 YEAR)) and payments.payment_status = 'pending' ;
+    `
+    // " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 YEAR) and payments.payment_status = 'pending' ;";
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        // console.log(data)
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+// super admin dashboard modal 
+app.get("/superadmin/orders/monthly", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 =
+      `SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product 
+    INNER JOIN order_items ON product.product_id = order_items.product_id
+     INNER JOIN orders ON orders.id = order_items.order_id 
+     INNER JOIN payments ON orders.id = payments.order_id 
+     INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id
+     INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id 
+     INNER JOIN user_tbl ON orders.user_id = user_tbl.id 
+     where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 30 DAY)) and payments.payment_status = 'pending' ;
+    `
+    // " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and payments.payment_status = 'pending';";
     db.query(sql1, (err, data) => {
       if (err) {
         return res.json(err);
@@ -4184,7 +4687,7 @@ app.delete("/superadmin/delete/coupon/:coupon_id", (req, res) => {
 app.post("/superadmin/addproduct", async (req, res) => {
   const date = new Date().toISOString().split("T")[0];
   const sql =
-    "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`fulldesctiption`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`) values(?)";
+    "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`fulldesctiption`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`,`productOf`) values(?)";
 
   const values = [
     req.body.product_name,
@@ -4205,6 +4708,7 @@ app.post("/superadmin/addproduct", async (req, res) => {
     req.body.sgst,
     req.body.cgst,
     req.body.productImageId,
+    'Health Hepta Pvt Ltd'
   ];
   // console.log(values)
   try {
@@ -4405,7 +4909,7 @@ app.get("/superadmin/orders/product/:product_id", (req, res) => {
     res.json(data);
   });
 });
-// Route for super admin to view product details
+// Route for super admin to view Order details
 app.get("/superadmin/orders/order/:order_id", (req, res) => {
   const order_id = req.params.order_id;
 
@@ -4491,7 +4995,42 @@ app.post("/superadmin/update/order", (req, res) => {
     db.query(
       sql,
       [expected_delivery_date, orderstatus, assigndeliverypersion, user_id, order_id],
-      (err) => {
+      (err, data) => {
+        if (err) {
+          console.error("Error updating order status:", err);
+          res.status(500).json({ error: "Internal server error" });
+          res.json(null);
+        } if (data.changedRows > 0) {
+          res.json("success");
+        } else {
+          res.json(null);
+
+        }
+      }
+    );
+  } catch (error) {
+    res.status(500).sendStatus("Internal Server Error");
+  }
+});
+//update Order details in b2b
+app.post("/superadmin/b2b/update/order", (req, res) => {
+  const values = [
+    (order_id = req.body.order_id),
+    (orderstatus = req.body.orderstatus),
+    (expected_delivery_date = req.body.expected_delivery_date),
+    (assigndeliverypersion = req.body.assigndeliverypersion),
+  ];
+  // Update the order Delivery Date in the database to indicate acceptance
+  const user_id = req.session.user.id;
+  // const user_name = req.session.user.name;
+
+  const sql =
+    "UPDATE `b2b_orders` SET `expected_delivery_date` = ? , `status` = ? , `assign_delivery_persion_id` = ?, `orderAcceptedBy` = 'superadmin'   WHERE `id` = ?;";
+  try {
+    db.query(
+      sql,
+      [expected_delivery_date, orderstatus, assigndeliverypersion, order_id],
+      (err, data) => {
         if (err) {
           console.error("Error updating order status:", err);
           res.status(500).json({ error: "Internal server error" });
@@ -5234,7 +5773,7 @@ app.post("/sub-admin/home/addproduct", async (req, res) => {
   if (req.session.user) {
     const date = new Date().toISOString().split("T")[0];
     // const sql = "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`sgst`,`cgst`,`productImageId`) values(?)";
-
+    const productOf = req.session.user.name;
     const values = [
       req.body.product_name,
       req.body.product_price,
@@ -5254,12 +5793,13 @@ app.post("/sub-admin/home/addproduct", async (req, res) => {
       req.body.manufacturing_Company_Name,
       req.body.moleculesName,
       req.body.productImageId,
+      productOf
     ];
 
     const creatProduct = await new Promise((resolve, reject) => {
       const date = new Date().toISOString().split("T")[0];
       const sql =
-        "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`fulldesctiption`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`) values(?)";
+        "Insert into product (`product_name`,`product_price`,`product_quantity`,`category`,`discount`,`description`,`fulldesctiption`,`manufacturing`,`expiry`,`DrugOrNot`,`AddedAt`,`fromOfMedicine`,`typeOfMedicine`,`moleculesName`,`manufacturing_Company_Name`,`sgst`,`cgst`,`productImageId`,`productOf`) values(?)";
       db.query(sql, [values], (err, result) => {
         if (err) {
           reject(err);
@@ -5644,7 +6184,6 @@ app.get("/superadmin/b2b/orders/order/:order_id", async (req, res) => {
       }
     });
   });
-  // console.log(productResults);
   let total_amount = 0;
   let total_discount = 0;
 
@@ -6400,7 +6939,7 @@ app.get("/superadmin/appoiments", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
 
-    const sql = "Select * from appointmenttable ";
+    const sql = "Select * from appointmenttable INNER JOIN doctors_details ON appointmenttable.doctor_id = doctors_details.id INNER JOIN user_tbl ON appointmenttable.user_id = user_tbl.id ;";
     db.query(sql, (err, data) => {
       if (err) {
         return res.json("Error");

@@ -59,7 +59,13 @@ router.get('/superadmin/b2b/home', async (req, res) => {
     }
 
 
-    const sql1 = " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type,expected_delivery_date,order_by  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id;";
+    const sql1 = ` SELECT b2b_orders.id, b2b_product.product_id,product_name , sub_admin_id ,name,order_date,status,payment_status,payment_type,expected_delivery_date,order_by  FROM b2b_product
+     INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id 
+     INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id 
+     INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id
+     INNER JOIN sub_admin ON sub_admin.id = b2b_orders.sub_admin_id;
+    `
+    // " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type,expected_delivery_date,order_by  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id;";
     db.query(sql1, (err, data) => {
         if (err) {
             return res.json(err);
@@ -87,20 +93,20 @@ router.get('/superadmin/b2b/home', async (req, res) => {
 
     const sql3 = "select * from sub_admin;";
 
-        db.query(sql3, (err, data) => {
-            if (err) {
-                return res.json(err);
-            }
-            else {
-                //  res.json("Success");
-                // console.log(data)
-                // return res.json(data);
-                sub_admin = data;
-            } 
-        })
+    db.query(sql3, (err, data) => {
+        if (err) {
+            return res.json(err);
+        }
+        else {
+            //  res.json("Success");
+            // console.log(data)
+            // return res.json(data);
+            sub_admin = data;
+        }
+    })
 
     // console.log([userno, UserCount, salesCount, purchaseCount, orderCount, stocks, lowStock, expirying_product, expiry_product, monthPurchase, YearlyPurchase, monthSales, YearlySales, Orders]);
-    return res.json([productResults, images, Orders,payment,sub_admin]);
+    return res.json([productResults, images, Orders, payment, sub_admin]);
 
 
 
