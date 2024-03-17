@@ -4339,7 +4339,7 @@ app.get("/superadmin/orders", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id ;";
+      " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_tbl.phone,user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id ;";
     db.query(sql1, (err, data) => {
       if (err) {
         return res.json(err);
@@ -4927,6 +4927,23 @@ app.get("/superadmin/orders/order/:order_id", (req, res) => {
     res.json(data);
   });
 });
+// Route for super admin to view Order details
+app.get("/superadmin/lab/test/:id", (req, res) => {
+  const labtest_id = req.params.id;
+
+  // View Product details by id
+  const sql =
+"SELECT * FROM hh_dev_db.labtestbookedtable where id = ?;"
+  db.query(sql, [labtest_id], (err, data) => {
+    if (err) {
+      console.error("Error updating order status:", err);
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
+    // console.log(data);
+    res.json(data);
+  });
+});
 app.get("/superadmin/orders/customer/:customer_id", (req, res) => {
   const user_id = req.params.customer_id;
 
@@ -4998,6 +5015,40 @@ app.post("/superadmin/update/order", (req, res) => {
       (err, data) => {
         if (err) {
           console.error("Error updating order status:", err);
+          res.status(500).json({ error: "Internal server error" });
+          res.json(null);
+        } if (data.changedRows > 0) {
+          res.json("success");
+        } else {
+          res.json(null);
+
+        }
+      }
+    );
+  } catch (error) {
+    res.status(500).sendStatus("Internal Server Error");
+  }
+});
+//update Lab Test details
+app.post("/superadmin/update/labbokking/status", (req, res) => {
+  const values = [
+    (labbooking_id = req.body.labbooking_id),
+    (labstatus = req.body.labstatus),
+  ];
+  console.log(labstatus)
+  // Update the order Delivery Date in the database to indicate acceptance
+  const user_id = req.session.user.id;
+  const user_name = req.session.user.name;
+
+  const sql =
+    "UPDATE `labtestbookedtable` SET  `LabTestStatus` = ? ,  `labTestAcceptedBy` = ?, `lab_test_Accepted_SubAdmin_Id` = ?   WHERE `id` = ?;";
+  try {
+    db.query(
+      sql,
+      [labstatus,user_name,user_id,labbooking_id],
+      (err, data) => {
+        if (err) {
+          console.error("Error updating lab test status:", err);
           res.status(500).json({ error: "Internal server error" });
           res.json(null);
         } if (data.changedRows > 0) {
@@ -6939,7 +6990,7 @@ app.get("/superadmin/appoiments", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
 
-    const sql = "Select * from appointmenttable INNER JOIN doctors_details ON appointmenttable.doctor_id = doctors_details.id INNER JOIN user_tbl ON appointmenttable.user_id = user_tbl.id ;";
+    const sql = "Select appointmenttable.id as a_id,doctor_id,appoint_date,appoint_time,appointmenttable.name,ph_number,appointmenttable.clinic_id,AppointmentStatus,user_id,appointmenttable.role,appointmenttable.type_of_visite,doc_name,clinic  from appointmenttable INNER JOIN doctors_details ON appointmenttable.doctor_id = doctors_details.id INNER JOIN user_tbl ON appointmenttable.user_id = user_tbl.id INNER JOIN sub_admin ON appointmenttable.clinic_id = sub_admin.id ;";
     db.query(sql, (err, data) => {
       if (err) {
         return res.json("Error");
@@ -6961,7 +7012,7 @@ app.get("/superadmin/labbokking", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
 
-    const sql = "Select * from labtestbookedtable ";
+    const sql = "Select labtestbookedtable.id,labtestbookedtable.Test_id,appoint_date,appoint_time,labtestbookedtable.name,ph_number,labtestbookedtable.clinic_id,LabTestStatus,user_id,labtestbookedtable.role,sample_collection,user_tbl.name as username,Test_name,sub_admin.name as sname from labtestbookedtable INNER JOIN laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id INNER JOIN user_tbl ON labtestbookedtable.user_id = user_tbl.id INNER JOIN sub_admin ON labtestbookedtable.clinic_id = sub_admin.id;";
     db.query(sql, (err, data) => {
       if (err) {
         return res.json("Error");

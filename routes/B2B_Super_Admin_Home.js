@@ -59,7 +59,7 @@ router.get('/superadmin/b2b/home', async (req, res) => {
     }
 
 
-    const sql1 = ` SELECT b2b_orders.id, b2b_product.product_id,product_name , sub_admin_id ,name,order_date,status,payment_status,payment_type,expected_delivery_date,order_by  FROM b2b_product
+    const sql1 = ` SELECT b2b_orders.id, b2b_product.product_id,product_name , sub_admin_id,phone ,name,order_date,status,payment_status,payment_type,expected_delivery_date,order_by  FROM b2b_product
      INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id 
      INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id 
      INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id
