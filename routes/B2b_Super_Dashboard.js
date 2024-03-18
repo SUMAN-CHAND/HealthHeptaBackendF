@@ -22,6 +22,8 @@ let lowStock = [];
 
 router.get('/super_admin/b2b/dashboard/details', async (req, res) => {
     if (req.session.user) {
+        const AllResult = await new Promise((resolve, reject) => { 
+
         const user_id = req.session.user.id
         //This is for no of user in our platfrom
         const sql = "SELECT COUNT(*) as no FROM user_tbl;";
@@ -35,6 +37,7 @@ router.get('/super_admin/b2b/dashboard/details', async (req, res) => {
                 //  res.json("Success");
                 // return res.json(data);
                 // console.log(data[0].no)
+                resolve(data)
                 userno = data[0].no;
             }
         })
@@ -457,9 +460,11 @@ router.get('/super_admin/b2b/dashboard/details', async (req, res) => {
                 // return res.json(data);
             }
         })
+
+    });
         // console.log(orderCount)
         // return res.json(orderCount);
-        // console.log([userno, UserCount, salesCount, purchaseCount, orderCount, stocks, lowStock, expirying_product, expiry_product, monthPurchase, YearlyPurchase, monthSales, YearlySales, Orders]);
+        console.log([userno, UserCount, salesCount, purchaseCount, orderCount, stocks, lowStock, expirying_product, expiry_product, monthPurchase, YearlyPurchase, monthSales, YearlySales, Orders]);
         return res.json([userno, UserCount, salesCount, purchaseCount, orderCount, stocks, lowStock, expirying_product, expiry_product, monthPurchase, YearlyPurchase, monthSales, YearlySales, Orders, Service_Provider]);
 
 

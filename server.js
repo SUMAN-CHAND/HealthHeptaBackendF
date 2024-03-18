@@ -1251,7 +1251,7 @@ app.post("/sub-admin/reschedule/lab/status/:appoiment_id", async (req, res) => {
 // Define the search route
 
 app.post("/search", async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   let likefiled;
 
   if (req.body.from === "category") {
@@ -1259,7 +1259,7 @@ app.post("/search", async (req, res) => {
   } else {
     likefiled = req.body.input[0];
   }
-  console.log(likefiled)
+  // console.log(likefiled)
   const input = `%${likefiled}%`;
   // const input = %${likefiled}%;
 
@@ -1270,7 +1270,7 @@ app.post("/search", async (req, res) => {
     //   "SELECT  sub_admin.id ,product_sub_admin.product_id as id ,name , address_sub_admin.address_id  ,City,product_name,typeOfMedicine,product.product_id,product_price,discount,description,phone,productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id where product.product_name Like ? Or product.category Like ? Or address.city Like ? Or name Like  ?  Or typeOfMedicine Like ?;";
 
     const query = `SELECT 
-    sub_admin.id,
+    sub_admin.id ,
     product_sub_admin.product_id AS id,
     name,
     address_sub_admin.address_id,
@@ -1282,23 +1282,26 @@ app.post("/search", async (req, res) => {
     discount,
     description,
     phone,
-    productImageId 
-FROM 
-    address_sub_admin 
-INNER JOIN 
-    address ON address_sub_admin.address_id = address.address_id  
-INNER JOIN 
-    sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id 
-INNER JOIN 
-    product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id 
-INNER JOIN 
-    product ON product_sub_admin.product_id = product.product_id 
-WHERE 
-    product.product_name LIKE CONCAT('%', ?, '%') 
-    OR product.category LIKE CONCAT('%', ?, '%') 
-    OR address.city LIKE CONCAT('%', ?, '%') 
-    OR name LIKE CONCAT('%', ?, '%') 
-    OR typeOfMedicine LIKE CONCAT('%', ?, '%');`;
+    productImageId
+FROM
+    product
+        LEFT JOIN
+    product_sub_admin ON product_sub_admin.product_id = product.product_id
+        left JOIN
+    sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id
+        left JOIN
+    address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id
+        left JOIN
+    address ON address_sub_admin.address_id = address.address_id
+     
+WHERE
+    product.product_name LIKE CONCAT('%', ?, '%')
+        OR product.category LIKE CONCAT('%', ?, '%')
+        OR address.city LIKE CONCAT('%', ?, '%')
+        OR name LIKE CONCAT('%', ?, '%')
+        OR typeOfMedicine LIKE CONCAT('%', ?, '%');
+
+     `;
 
     const productResults = await new Promise((resolve, reject) => {
       db.query(query, [input, input, input, input, input], (err, result) => {
@@ -1445,16 +1448,16 @@ WHERE
 
       MedicineShopsImage = await Promise.all(imagesPromises);
     }
-    console.log([
-      productResults,
-      images,
-      LabResults,
-      LabTestimages,
-      DoctorResults,
-      Doctorimages,
-      MedicineShops,
-      MedicineShopsImage,
-    ]);
+    // console.log([
+    //   productResults,
+    //   images,
+    //   LabResults,
+    //   LabTestimages,
+    //   DoctorResults,
+    //   Doctorimages,
+    //   MedicineShops,
+    //   MedicineShopsImage,
+    // ]);
     // return res.json([productResults, images]);
 
     return res.json([
@@ -1826,7 +1829,7 @@ app.get("/profile-details", (req, res) => {
     // console.log(user)
     var address = [];
     if (user.role === "customer" || user.role === "admin") {
-      const sql = "select * from address where user_id = ?";
+      const sql = "select * from address where user_id = ? and primaryAddress = 'primary'";
       const sql1 =
         "Select COUNT(`cart_id`) AS namesCount from carttable where user_id = ?";
       db.query(sql, [user_id], (err, data) => {
@@ -1835,7 +1838,7 @@ app.get("/profile-details", (req, res) => {
         }
         address = data;
       });
-      if (address.length > 0) {
+      if (address.length = 1) {
         db.query(sql1, [user_id], (err, data) => {
           try {
             if (err) {
@@ -1846,7 +1849,7 @@ app.get("/profile-details", (req, res) => {
 
               // console.log(data)
               // console.log(address)
-              return res.json([data[0].namesCount, user, address[0].City]);
+              return res.json([data[0].namesCount, user, address[0].pin_code]);
             } else {
               return res.json("Faile");
             }
@@ -3660,8 +3663,9 @@ app.get("/superadmin/userno/week", (req, res) => {
 
 var salesCount = [];
 
-app.get("/superadmin/sales/week", (req, res) => {
+app.get("/superadmin/sales/week", async (req, res) => {
   if (req.session.user) {
+
     const user_id = req.session.user.id;
     const sql1 =
       "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL + 0 DAY) and payments.payment_status = 'completed';";
@@ -3677,48 +3681,51 @@ app.get("/superadmin/sales/week", (req, res) => {
       "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL + 5 DAY) and payments.payment_status = 'completed';";
     const sql7 =
       "SELECT  COUNT(*) as no FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL + 6 DAY) and payments.payment_status = 'completed';";
+    const productResults = await new Promise((resolve, reject) => {
 
-    db.query(sql1, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      salesCount.push(data[0].no);
-    });
-    db.query(sql2, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      salesCount.push(data[0].no);
-    });
-    db.query(sql3, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      salesCount.push(data[0].no);
-    });
-    db.query(sql4, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      salesCount.push(data[0].no);
-    });
-    db.query(sql5, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      salesCount.push(data[0].no);
-    });
-    db.query(sql6, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      salesCount.push(data[0].no);
-    });
-    db.query(sql7, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      salesCount.push(data[0].no);
+      db.query(sql1, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        salesCount.push(data[0].no);
+      });
+      db.query(sql2, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        salesCount.push(data[0].no);
+      });
+      db.query(sql3, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        salesCount.push(data[0].no);
+      });
+      db.query(sql4, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        salesCount.push(data[0].no);
+      });
+      db.query(sql5, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        salesCount.push(data[0].no);
+      });
+      db.query(sql6, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        salesCount.push(data[0].no);
+      });
+      db.query(sql7, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        salesCount.push(data[0].no);
+      });
+
     });
     // console.log(salesCount)
     return res.json(salesCount);
@@ -3729,67 +3736,80 @@ app.get("/superadmin/sales/week", (req, res) => {
 
 var purchaseCount = [];
 
-app.get("/superadmin/purchase/week", (req, res) => {
+app.get("/superadmin/purchase/week", async (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +0 DAY) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +0 DAY) and payments.payment_status = 'pending';";
     const sql2 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +1 DAY) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +1 DAY) and payments.payment_status = 'pending';";
     const sql3 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +2 DAY) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +2 DAY) and payments.payment_status = 'pending';";
     const sql4 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +3 DAY) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +3 DAY) and payments.payment_status = 'pending';";
     const sql5 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +4 DAY) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +4 DAY) and payments.payment_status = 'pending';";
     const sql6 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +5 DAY) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +5 DAY) and payments.payment_status = 'pending';";
     const sql7 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +6 DAY) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where CAST(orders.order_date AS DATE) = DATE_SUB(CURDATE(), INTERVAL +6 DAY) and payments.payment_status = 'pending';";
 
-    db.query(sql1, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      purchaseCount.push(data[0].no);
+    const productResults = await new Promise((resolve, reject) => {
+      db.query(sql1, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        resolve(data[0].no);
+        purchaseCount.push(data[0].no);
+
+
+      });
+      db.query(sql2, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        purchaseCount.push(data[0].no);
+
+
+      });
+      db.query(sql3, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        purchaseCount.push(data[0].no);
+
+
+      });
+      db.query(sql4, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        purchaseCount.push(data[0].no);
+
+
+      });
+      db.query(sql5, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        purchaseCount.push(data[0].no);
+      });
+      db.query(sql6, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        purchaseCount.push(data[0].no);
+
+
+      });
+      db.query(sql7, (err, data) => {
+        if (err) {
+          return res.json(err);
+        }
+        purchaseCount.push(data[0].no);
+
+      });
     });
-    db.query(sql2, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      purchaseCount.push(data[0].no);
-    });
-    db.query(sql3, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      purchaseCount.push(data[0].no);
-    });
-    db.query(sql4, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      purchaseCount.push(data[0].no);
-    });
-    db.query(sql5, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      purchaseCount.push(data[0].no);
-    });
-    db.query(sql6, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      purchaseCount.push(data[0].no);
-    });
-    db.query(sql7, (err, data) => {
-      if (err) {
-        return res.json(err);
-      }
-      purchaseCount.push(data[0].no);
-    });
-    // console.log(purchaseCount)
     return res.json(purchaseCount);
   } else {
     res.status(500).send("data not found");
@@ -4044,7 +4064,7 @@ app.get("/superadmin/product/purchase_monthly", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) and payments.payment_status = 'pending';";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -4067,7 +4087,7 @@ app.get("/superadmin/product/purchase_yearly", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 YEAR)) and payments.payment_status = 'pending';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.order_date > (DATE_SUB(CURDATE(), INTERVAL 1 YEAR)) and payments.payment_status = 'pending';";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -4090,7 +4110,7 @@ app.get("/superadmin/product/sales_monthly", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and payments.payment_status = 'complete';";
+      " SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id   where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and payments.payment_status = 'complete';";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -4135,7 +4155,7 @@ app.get("/superadmin/product/sales_yearly", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "SELECT  COUNT(*) as no, sum(product_price*product_quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 YEAR) and payments.payment_status = 'complete';";
+      "SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price FROM  product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON payments.order_id = orders.id  where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 YEAR) and payments.payment_status = 'complete';";
 
     db.query(sql1, (err, data) => {
       if (err) {
@@ -4418,6 +4438,137 @@ app.get("/superadmin/orders/monthly", (req, res) => {
     res.status(500).send("data not found");
   }
 });
+// super admin dashboard modal  otc product Orders
+app.get("/superadmin/orders/otc/products", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 =
+      `SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product 
+      INNER JOIN order_items ON product.product_id = order_items.product_id
+       INNER JOIN orders ON orders.id = order_items.order_id 
+       INNER JOIN payments ON orders.id = payments.order_id 
+       INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id
+       INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id 
+       INNER JOIN user_tbl ON orders.user_id = user_tbl.id 
+       where product.DrugOrNot = 'otc';
+    `
+    // " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and payments.payment_status = 'pending';";
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        // console.log(data)
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+
+// super admin dashboard modal  otc product Orders
+app.get("/superadmin/orders/drug/products", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 =
+      `SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product 
+      INNER JOIN order_items ON product.product_id = order_items.product_id
+       INNER JOIN orders ON orders.id = order_items.order_id 
+       INNER JOIN payments ON orders.id = payments.order_id 
+       INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id
+       INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id 
+       INNER JOIN user_tbl ON orders.user_id = user_tbl.id 
+       where product.DrugOrNot = 'drug';
+    `
+    // " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and payments.payment_status = 'pending';";
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        // console.log(data)
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+
+
+
+// super admin dashboard modal  otc product Orders
+app.get("/superadmin/otc/order/no", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 =
+      ` SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price  FROM product 
+      INNER JOIN order_items ON product.product_id = order_items.product_id
+       INNER JOIN orders ON orders.id = order_items.order_id 
+       INNER JOIN payments ON orders.id = payments.order_id 
+       INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id
+       INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id 
+       INNER JOIN user_tbl ON orders.user_id = user_tbl.id 
+       where product.DrugOrNot = 'otc';
+    `
+    // " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and payments.payment_status = 'pending';";
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        // console.log(data)
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+// super admin dashboard modal  otc product Orders
+app.get("/superadmin/drug/order/no", (req, res) => {
+  if (req.session.user) {
+    const user_id = req.session.user.id;
+    const sql1 =
+      ` SELECT  COUNT(*) as no, sum(product_price*order_items.quantity) as price  FROM product 
+      INNER JOIN order_items ON product.product_id = order_items.product_id
+       INNER JOIN orders ON orders.id = order_items.order_id 
+       INNER JOIN payments ON orders.id = payments.order_id 
+       INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id
+       INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id 
+       INNER JOIN user_tbl ON orders.user_id = user_tbl.id 
+       where product.DrugOrNot = 'drug';
+    `
+    // " SELECT  orders.id,orders.role,sub_admin.name as subadmin_name, product.product_id,product_name,user_tbl.name, user_id,order_date,status,payment_status,payment_type,expected_delivery_date,orderAcceptedBy  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN sub_admin ON sub_admin.id = order_sub_admin.sub_admin_id INNER JOIN user_tbl ON orders.user_id = user_tbl.id where orders.order_date < DATE_SUB(CURDATE(), INTERVAL -1 MONTH) and payments.payment_status = 'pending';";
+    db.query(sql1, (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        // console.log(data)
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
+
+
+
 app.get("/superadmin/user", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
@@ -4933,7 +5084,7 @@ app.get("/superadmin/lab/test/:id", (req, res) => {
 
   // View Product details by id
   const sql =
-"SELECT * FROM hh_dev_db.labtestbookedtable where id = ?;"
+    "SELECT * FROM hh_dev_db.labtestbookedtable where id = ?;"
   db.query(sql, [labtest_id], (err, data) => {
     if (err) {
       console.error("Error updating order status:", err);
@@ -5045,7 +5196,7 @@ app.post("/superadmin/update/labbokking/status", (req, res) => {
   try {
     db.query(
       sql,
-      [labstatus,user_name,user_id,labbooking_id],
+      [labstatus, user_name, user_id, labbooking_id],
       (err, data) => {
         if (err) {
           console.error("Error updating lab test status:", err);

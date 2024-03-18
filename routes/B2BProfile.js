@@ -51,7 +51,7 @@ router.get('/sub_admin/profile-details', (req, res) => {
 
                         // console.log(data)
                         // console.log(address)
-                        return res.json([data[0].namesCount, user_id, address[0].City, user.role]);
+                        return res.json([data[0].namesCount, user_id, address[0].pin_code, user.role]);
                     } else {
                         return res.json(null);
                     }

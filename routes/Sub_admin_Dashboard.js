@@ -19,8 +19,11 @@ let expiry_product = [];
 let expirying_product = [];
 let lowStock = [];
 
-router.get('/sub-admin/dashboard/details', (req, res) => {
+router.get('/sub-admin/dashboard/details', async (req, res) => {
     if (req.session.user) {
+
+        const AllResult = await new Promise((resolve, reject) => { 
+        
         const user_id = req.session.user.id
         //This is for no of user in our platfrom
         const sql = "SELECT COUNT(*) as no FROM user_tbl;";
@@ -31,9 +34,7 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
                 return res.json(err);
             }
             else {
-                //  res.json("Success");
-                // return res.json(data);
-                // console.log(data[0].no)
+                resolve(data);
                 userno = data[0].no;
             }
         })
@@ -458,6 +459,7 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
             }
             orderCount.push(data[0].no);
         })
+    });
         // console.log(orderCount)
         // return res.json(orderCount);
         // console.log([userno, UserCount, salesCount, purchaseCount, orderCount, stocks, lowStock, expirying_product, expiry_product, monthPurchase, YearlyPurchase, monthSales, YearlySales, Orders]);
@@ -468,6 +470,7 @@ router.get('/sub-admin/dashboard/details', (req, res) => {
     } else {
         res.status(500).send("data not found")
     }
+
 })
 
 
