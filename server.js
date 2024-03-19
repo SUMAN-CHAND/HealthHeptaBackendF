@@ -4593,8 +4593,7 @@ app.get("/superadmin/payments", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " select payment_id,user_id,order_id,payment_date,total_amount,payment_status,payment_type FROM payments INNER JOIN orders ON payments.order_id = orders.id;";
-
+      "select payment_id,user_id,order_id,payment_date,total_amount,payment_status,payment_type,paymentacceptedby,paymentacceptedUserId,name FROM payments INNER JOIN orders ON payments.order_id = orders.id INNER JOIN user_tbl ON user_tbl.id = orders.user_id;"
     db.query(sql1, (err, data) => {
       if (err) {
         return res.json(err);
@@ -5078,6 +5077,24 @@ app.get("/superadmin/orders/order/:order_id", (req, res) => {
     res.json(data);
   });
 });
+
+// Route for super admin to view Order details
+app.get("/superadmin/payment/status/:order_id", (req, res) => {
+  const order_id = req.params.order_id;
+
+  // View Product details by id
+  const sql = "select * from payments where order_id = ?"
+
+  db.query(sql, [order_id], (err, data) => {
+    if (err) {
+      console.error("Error updating order status:", err);
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
+    // console.log(data);
+    res.json(data);
+  });
+});
 // Route for super admin to view Order details
 app.get("/superadmin/lab/test/:id", (req, res) => {
   const labtest_id = req.params.id;
@@ -5167,6 +5184,74 @@ app.post("/superadmin/update/order", (req, res) => {
         if (err) {
           console.error("Error updating order status:", err);
           res.status(500).json({ error: "Internal server error" });
+          res.json(null);
+        } if (data.changedRows > 0) {
+          res.json("success");
+        } else {
+          res.json(null);
+
+        }
+      }
+    );
+  } catch (error) {
+    res.status(500).sendStatus("Internal Server Error");
+  }
+});
+//update Payment details
+app.post("/superadmin/update/payment", (req, res) => {
+  const values = [
+    (order_id = req.body.order_id),
+    (payment_status = req.body.payment_status),
+  ];
+
+  // Update the order Delivery Date in the database to indicate acceptance
+  const user_id = req.session.user.id;
+  // const user_name = req.session.user.name;
+
+  const sql =
+    "UPDATE `payments` SET `payment_status` = ? ,  `paymentacceptedby` = 'superadmin', `paymentacceptedUserId` = ?   WHERE `order_id` = ?;";
+  try {
+    db.query(
+      sql,
+      [payment_status, user_id, order_id],
+      (err, data) => {
+        if (err) {
+          console.error("Error updating order status:", err);
+          // res.status(500).json({ error: "Internal server error" });
+          res.json(null);
+        } if (data.changedRows > 0) {
+          res.json("success");
+        } else {
+          res.json(null);
+
+        }
+      }
+    );
+  } catch (error) {
+    res.status(500).sendStatus("Internal Server Error");
+  }
+});
+//update Payment details
+app.post("/sub-admin/update/payment", (req, res) => {
+  const values = [
+    (order_id = req.body.order_id),
+    (payment_status = req.body.payment_status),
+  ];
+
+  // Update the order Delivery Date in the database to indicate acceptance
+  const user_id = req.session.user.id;
+  const user_name = req.session.user.name;
+
+  const sql =
+    "UPDATE `payments` SET `payment_status` = ? ,  `paymentacceptedby` = ? , `paymentacceptedUserId` = ?   WHERE `order_id` = ?;";
+  try {
+    db.query(
+      sql,
+      [payment_status, user_name, user_id, order_id],
+      (err, data) => {
+        if (err) {
+          console.error("Error updating order status:", err);
+          // res.status(500).json({ error: "Internal server error" });
           res.json(null);
         } if (data.changedRows > 0) {
           res.json("success");
@@ -6307,8 +6392,7 @@ app.get("/sub-admin/payments", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      " select payment_id,user_id,payments.order_id,payment_date,total_amount,payment_status,payment_type,product_id FROM payments INNER JOIN orders ON payments.order_id = orders.id INNER JOIN order_items ON order_items.order_id = orders.id INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id  where order_sub_admin.sub_admin_id = ?;";
-    // console.log(user_id)
+      "select DISTINCT payment_id,user_id,payments.order_id,payment_date,total_amount,payment_status,payment_type,paymentacceptedby,paymentacceptedUserId,name FROM payments INNER JOIN orders ON payments.order_id = orders.id  INNER JOIN order_sub_admin ON orders.id = order_sub_admin.order_id INNER JOIN user_tbl ON user_tbl.id = orders.user_id where order_sub_admin.sub_admin_id = ?;"
     db.query(sql1, [user_id], (err, data) => {
       if (err) {
         return res.json(err);
@@ -6348,7 +6432,7 @@ app.get("/sub-admin/orders/order/:order_id", async (req, res) => {
 
   // View Product details by id
   const sql =
-    "SELECT orders.id, product.product_id , discount,user_id,order_date,status,payment_status,payment_type,product_name,product_price,description,quantity,sgst,cgst  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id where orders.id = ? ";
+    "SELECT orders.id, product.product_id , discount,user_id,order_date,status,payments.payment_id,payment_status,payment_type,product_name,product_price,description,quantity,sgst,cgst  FROM product INNER JOIN order_items ON product.product_id = order_items.product_id INNER JOIN orders ON orders.id = order_items.order_id INNER JOIN payments ON orders.id = payments.order_id where orders.id = ? ;"
   const productResults = await new Promise((resolve, reject) => {
     db.query(sql, [order_id], (err, result) => {
       if (err) {
@@ -6356,6 +6440,7 @@ app.get("/sub-admin/orders/order/:order_id", async (req, res) => {
         reject(err);
       } else {
         // console.log('Data retrieved successfully');
+        // console.log(result)
         resolve(result);
       }
     });
