@@ -59,11 +59,34 @@ router.get('/superadmin/b2b/home', async (req, res) => {
     }
 
 
-    const sql1 = ` SELECT b2b_orders.id, b2b_product.product_id,product_name , sub_admin_id,phone ,name,order_date,status,payment_status,payment_type,expected_delivery_date,order_by  FROM b2b_product
-     INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id 
-     INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id 
-     INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id
-     INNER JOIN sub_admin ON sub_admin.id = b2b_orders.sub_admin_id;
+    const sql1 = `
+    SELECT 
+        b2b_orders.id,
+        b2b_product.product_id,
+        product_name,
+        sub_admin_id,
+        phone,
+        name,
+        order_date,
+        status,
+        payment_status,
+        payment_type,
+        expected_delivery_date,
+        order_by,
+        paid_amount,
+        due_amount,
+        total_amount
+    FROM
+        b2b_product
+            INNER JOIN
+        b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id
+            INNER JOIN
+        b2b_orders ON b2b_orders.id = b2b_order_items.order_id
+            INNER JOIN
+        b2b_payments ON b2b_orders.id = b2b_payments.order_id
+            INNER JOIN
+        sub_admin ON sub_admin.id = b2b_orders.sub_admin_id;
+    
     `
     // " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type,expected_delivery_date,order_by  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id;";
     db.query(sql1, (err, data) => {
@@ -77,7 +100,7 @@ router.get('/superadmin/b2b/home', async (req, res) => {
         }
     })
 
-    const sql2 = " select payment_id,sub_admin_id,order_id,payment_date,total_amount,payment_status,payment_type FROM b2b_payments INNER JOIN b2b_orders ON b2b_payments.order_id = b2b_orders.id;";
+    const sql2 = " select payment_id,sub_admin_id,order_id,payment_date,total_amount,paid_amount,due_amount,payment_status,payment_type FROM b2b_payments INNER JOIN b2b_orders ON b2b_payments.order_id = b2b_orders.id;";
 
     db.query(sql2, (err, data) => {
         if (err) {
@@ -115,6 +138,97 @@ router.get('/superadmin/b2b/home', async (req, res) => {
     // }
 })
 
+// Route for super admin to view Order details
+router.get("/superadmin/b2b/payment/status/:order_id", (req, res) => {
+    const order_id = req.params.order_id;
 
+    // View Product details by id
+    const sql = "select * from b2b_payments where order_id = ?"
+
+    db.query(sql, [order_id], (err, data) => {
+        if (err) {
+            console.error("Error updating order status:", err);
+            res.status(500).json({ error: "Internal server error" });
+            return;
+        }
+        // console.log(data);
+        res.json(data);
+    });
+});
+
+//update Payment details
+router.post("/superadmin/b2b/update/payment", (req, res) => {
+    const values = [
+        (order_id = req.body.order_id),
+        (payment_status = req.body.payment_status),
+        (paid_amount = req.body.paid_amount),
+    ];
+    //   const due_amount = total_amount - paid_amount;
+    // Update the order Delivery Date in the database to indicate acceptance
+    const user_id = req.session.user.id;
+    const user_name = req.session.user.name;
+    const user_role = req.session.user.role;
+    const sql =
+        "UPDATE `b2b_payments` SET `payment_status` = ? ,  `paymentacceptedby` = ? , `paymentacceptedUserId` = ?, `paid_amount`= (`paid_amount` + ?),`due_amount` = (`total_amount`- `paid_amount`)   WHERE `order_id` = ?;"
+    try {
+        db.query(
+            sql,
+            [payment_status, user_name,user_id, paid_amount, order_id],
+           async (err, data) => {
+                if (err) {
+                    console.error("Error updating order status:", err);
+                    // res.status(500).json({ error: "Internal server error" });
+                    res.json(null);
+                } if (data.changedRows > 0) {
+                    // update the sub admin due amount
+                    // const dueAmount = await Promise.all(
+                    //     productInfo.map(() => {
+                    const sql4 =
+                        "SELECT due_amount  FROM b2b_payments where order_id = ?";
+                        const dueAmount = await new Promise((resolve, reject) => {
+                        db.query(sql4, [order_id], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                    const sql5 =
+                        "SELECT sub_admin_id  FROM b2b_orders where id = ?";
+                    const SubAdminIDs = await new Promise((resolve, reject) => {
+                        db.query(sql5, [order_id], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(result);
+                            }
+                        });
+                    });
+                    const sql6 =
+                        " UPDATE `sub_admin` SET `total_due_payment` = ? WHERE `sub_admin_id` = ?;"
+
+                    const SubAdminDetails_id = await new Promise((resolve, reject) => {
+                        db.query(sql5, [dueAmount.due_amount, SubAdminIDs.sub_admin_id], (err, result) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                
+                                resolve(result);
+                            }
+                        });
+                    });
+
+                    res.json({status : "success",role:user_role});
+                } else {
+                    res.json(null);
+
+                }
+            }
+        );
+    } catch (error) {
+        res.status(500).sendStatus("Internal Server Error");
+    }
+});
 
 module.exports = router;
