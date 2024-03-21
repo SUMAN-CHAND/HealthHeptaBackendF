@@ -581,6 +581,7 @@ app.post("/doctorbook", async (req, res) => {
           clinic_id,
           user_id,
           type_of_visite,
+          payment,
         } = req.body;
         const sql1 = `SELECT * FROM doctors_details WHERE id = ${db.escape(
           doctor_id
@@ -592,6 +593,7 @@ app.post("/doctorbook", async (req, res) => {
             } else {
               doctor = data;
               const Phone_number = `+91${data[0].Phone_number}`;
+              const total_amount = data[0].fees;
               const sql = `INSERT INTO appointmenttable (doctor_id, appoint_date, appoint_time, name, ph_number, clinic_id, user_id,AppointmentStatus,role,type_of_visite) VALUES (?, ?, ?, ?, ?, ?, ?,'apply','customer',?)`;
               try {
                 db.query(
@@ -614,6 +616,25 @@ app.post("/doctorbook", async (req, res) => {
                         .json({ error: "Failed to book appointment" });
                     } else {
                       // The appointment was successfully booked
+                      const appoiment_id = data.insertId;
+                      // Insert payment method
+                      const createPayment = await new Promise((resolve, reject) => {
+                        const sql4 =
+                          "INSERT INTO payments (appoiment_id,total_amount,payment_status,payment_type,service_type) VALUES (?, ?,?,?,'Appoiment Book');";
+                        db.query(
+                          sql4,
+                          [appoiment_id, total_amount, "pending", payment],
+                          (err, result) => {
+                            if (err) {
+                              reject(err);
+                            } else {
+                              console.log(result)
+                              resolve(result);
+                            }
+                          }
+                        );
+                      });
+
                       try {
                         await client.messages.create({
                           to: Phone_number,
@@ -4593,7 +4614,7 @@ app.get("/superadmin/payments", (req, res) => {
   if (req.session.user) {
     const user_id = req.session.user.id;
     const sql1 =
-      "select payment_id,user_id,order_id,payment_date,total_amount,payment_status,payment_type,paymentacceptedby,paymentacceptedUserId,name FROM payments INNER JOIN orders ON payments.order_id = orders.id INNER JOIN user_tbl ON user_tbl.id = orders.user_id;"
+      "select payment_id,user_id,phone,order_id,payment_date,total_amount,payment_status,payment_type,paymentacceptedby,paymentacceptedUserId,name FROM payments INNER JOIN orders ON payments.order_id = orders.id INNER JOIN user_tbl ON user_tbl.id = orders.user_id;"
     db.query(sql1, (err, data) => {
       if (err) {
         return res.json(err);
@@ -5096,6 +5117,40 @@ app.get("/superadmin/payment/status/:order_id", (req, res) => {
   });
 });
 // Route for super admin to view Order details
+app.get("/superadmin/payment/lab/status/:labtest_id", (req, res) => {
+  const labtest_id = req.params.labtest_id;
+
+  // View Product details by id
+  const sql = "select * from payments where labbooking_id = ?"
+
+  db.query(sql, [labtest_id], (err, data) => {
+    if (err) {
+      console.error("Error updating order status:", err);
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
+    // console.log(data);
+    res.json(data);
+  });
+});
+// Route for super admin to view Order details
+app.get("/superadmin/payment/appoiment/status/:appoiment_id", (req, res) => {
+  const appoiment_id = req.params.appoiment_id;
+
+  // View Product details by id
+  const sql = "select * from payments where appoiment_id = ?"
+
+  db.query(sql, [appoiment_id], (err, data) => {
+    if (err) {
+      console.error("Error updating order status:", err);
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
+    // console.log(data);
+    res.json(data);
+  });
+});
+// Route for super admin to view Order details
 app.get("/superadmin/lab/test/:id", (req, res) => {
   const labtest_id = req.params.id;
 
@@ -5248,6 +5303,74 @@ app.post("/sub-admin/update/payment", (req, res) => {
     db.query(
       sql,
       [payment_status, user_name, user_id, order_id],
+      (err, data) => {
+        if (err) {
+          console.error("Error updating order status:", err);
+          // res.status(500).json({ error: "Internal server error" });
+          res.json(null);
+        } if (data.changedRows > 0) {
+          res.json("success");
+        } else {
+          res.json(null);
+
+        }
+      }
+    );
+  } catch (error) {
+    res.status(500).sendStatus("Internal Server Error");
+  }
+});
+//update Payment details
+app.post("/sub-admin/update/lab/payment", (req, res) => {
+  const values = [
+    (labtest_id = req.body.labtest_id),
+    (payment_status = req.body.payment_status),
+  ];
+
+  // Update the order Delivery Date in the database to indicate acceptance
+  const user_id = req.session.user.id;
+  const user_name = req.session.user.name;
+
+  const sql =
+    "UPDATE `payments` SET `payment_status` = ? ,  `paymentacceptedby` = ? , `paymentacceptedUserId` = ?   WHERE `labbooking_id` = ?;";
+  try {
+    db.query(
+      sql,
+      [payment_status, user_name, user_id, labtest_id],
+      (err, data) => {
+        if (err) {
+          console.error("Error updating order status:", err);
+          // res.status(500).json({ error: "Internal server error" });
+          res.json(null);
+        } if (data.changedRows > 0) {
+          res.json("success");
+        } else {
+          res.json(null);
+
+        }
+      }
+    );
+  } catch (error) {
+    res.status(500).sendStatus("Internal Server Error");
+  }
+});
+//update Payment details
+app.post("/sub-admin/update/appoiment/payment", (req, res) => {
+  const values = [
+    (appoiment_id = req.body.appoiment_id),
+    (payment_status = req.body.payment_status),
+  ];
+
+  // Update the order Delivery Date in the database to indicate acceptance
+  const user_id = req.session.user.id;
+  const user_name = req.session.user.name;
+
+  const sql =
+    "UPDATE `payments` SET `payment_status` = ? ,  `paymentacceptedby` = ? , `paymentacceptedUserId` = ?   WHERE `appoiment_id` = ?;";
+  try {
+    db.query(
+      sql,
+      [payment_status, user_name, user_id, appoiment_id],
       (err, data) => {
         if (err) {
           console.error("Error updating order status:", err);
@@ -6765,7 +6888,7 @@ app.get("/viewdetails/doctor/:doctor_id", async (req, res) => {
     const doctor_id = req.params.doctor_id;
     // const user_id = req.session.user.id;
     const query =
-      "SELECT doctors_details.id,doc_name,doc_desc,location,clinic,clinic_desc,clinic_id,type,doctor_imageId,specializes,Phone_number,type_of_visite FROM doctors_details   WHERE  doctors_details.id = ?;";
+      "SELECT doctors_details.id,doc_name,doc_desc,location,clinic,clinic_desc,clinic_id,type,doctor_imageId,specializes,Phone_number,type_of_visite,fees FROM doctors_details   WHERE  doctors_details.id = ?;";
     const doctorResults = await new Promise((resolve, reject) => {
       db.query(query, doctor_id, (err, result) => {
         if (err) {
@@ -6954,7 +7077,34 @@ app.get("/sub-admin/see-appoiment", (req, res) => {
 
     const clinic_id = user_id;
     const sql =
-      "Select appointmenttable.id,doctor_id,appoint_date,name,appoint_time,clinic,location,doc_desc,doc_name,appointmenttable.ph_number,user_id,appointmenttable.clinic_id,appointmenttable.type_of_visite,ph_number,clinic_desc ,AppointmentStatus from appointmenttable INNER JOIN doctors_details ON appointmenttable.doctor_id = doctors_details.id  where appointmenttable.clinic_id = ?;";
+      `SELECT 
+    appointmenttable.id,
+    doctor_id,
+    appoint_date,
+        fees,
+        payment_status,
+    name,
+    appoint_time,
+    clinic,
+    location,
+    doc_desc,
+    doc_name,
+    appointmenttable.ph_number,
+    user_id,
+    appointmenttable.clinic_id,
+    appointmenttable.type_of_visite,
+    ph_number,
+    clinic_desc,
+    AppointmentStatus
+FROM
+    appointmenttable
+        INNER JOIN
+    doctors_details ON appointmenttable.doctor_id = doctors_details.id
+    INNER JOIN
+        payments ON payments.appoiment_id = appointmenttable.id
+WHERE
+    appointmenttable.clinic_id = ?;`
+    // "Select appointmenttable.id,doctor_id,appoint_date,name,appoint_time,clinic,location,doc_desc,doc_name,appointmenttable.ph_number,user_id,appointmenttable.clinic_id,appointmenttable.type_of_visite,ph_number,clinic_desc ,AppointmentStatus from appointmenttable INNER JOIN doctors_details ON appointmenttable.doctor_id = doctors_details.id  where appointmenttable.clinic_id = ?;";
     db.query(sql, [clinic_id], (err, data) => {
       if (err) {
         return res.json("Error");
@@ -7035,8 +7185,34 @@ app.get("/sub-admin/see-lab-bookings", (req, res) => {
     const user_id = req.session.user.id;
 
     const clinic_id = user_id;
-    const sql =
-      "Select labtestbookedtable.Test_id,appoint_date,labtestbookedtable.name,laboratory_tests_details.Test_Name,sample_collection,appoint_time,ph_number,user_id,labtestbookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from labtestbookedtable INNER JOIN laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id  where labtestbookedtable.clinic_id = ?;";
+    const sql = `
+    SELECT 
+    labtestbookedtable.id,
+        labtestbookedtable.Test_id,
+        appoint_date,
+        price,
+        payment_status,
+        labtestbookedtable.name,
+        laboratory_tests_details.Test_Name,
+        sample_collection,
+        appoint_time,
+        ph_number,
+        user_id,
+        labtestbookedtable.clinic_id,
+        ph_number,
+        sub_admin.name AS sub_name,
+        LabTestStatus
+    FROM
+        labtestbookedtable
+            INNER JOIN
+        laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id
+            INNER JOIN
+        sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id
+            INNER JOIN
+        payments ON payments.labbooking_id = labtestbookedtable.id
+    WHERE
+        labtestbookedtable.clinic_id = ?;`
+    // "Select labtestbookedtable.Test_id,appoint_date,price,payment_status,labtestbookedtable.name,laboratory_tests_details.Test_Name,sample_collection,appoint_time,ph_number,user_id,labtestbookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from labtestbookedtable INNER JOIN laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id  where labtestbookedtable.clinic_id = ?;";
     db.query(sql, [clinic_id], (err, data) => {
       if (err) {
         return res.json("Error");
@@ -7130,7 +7306,7 @@ app.get("/user/see-lab-booking", async (req, res) => {
     // console.log(user_id)
     // const clinic_id = user_id;
     const query =
-      "Select labtestbookedtable.id ,labtestbookedtable.Test_id,appoint_date,labtestbookedtable.name,laboratory_tests_details.Test_Name,test_imageId,sample_collection,appoint_time,ph_number,user_id,labtestbookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from labtestbookedtable INNER JOIN laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id  where labtestbookedtable.user_id = ?;";
+      "Select labtestbookedtable.id ,Price,labtestbookedtable.Test_id,appoint_date,labtestbookedtable.name,laboratory_tests_details.Test_Name,test_imageId,sample_collection,appoint_time,ph_number,user_id,labtestbookedtable.clinic_id,ph_number,sub_admin.name as sub_name,LabTestStatus from labtestbookedtable INNER JOIN laboratory_tests_details ON labtestbookedtable.Test_id = laboratory_tests_details.Test_id INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id  where labtestbookedtable.user_id = ?;";
     const laboratoryResults = await new Promise((resolve, reject) => {
       db.query(query, user_id, (err, result) => {
         if (err) {
