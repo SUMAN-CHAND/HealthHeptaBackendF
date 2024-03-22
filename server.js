@@ -136,6 +136,40 @@ app.get("/locations", async (req, res) => {
     console.log(error);
   }
 });
+app.get("/served/locations", async (req, res) => {
+  const sql = "SELECT City,pin_code,state FROM sub_admin inner join address_sub_admin on address_sub_admin.sub_admin_id = sub_admin.id inner join address on address_sub_admin.address_id = address.address_id";
+  try {
+    db.query(sql, (err, data) => {
+      if (err) {
+        console.log(err);
+      } else {
+        return res.json(data);
+      }
+    });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.get('/all/pincodes', async (req, res) => {
+  const pincode = req.query.pincode;
+
+  try {
+    const [rows] = await pool.query('SELECT * FROM sub_admin inner join address_sub_admin on address_sub_admin.sub_admin_id = sub_admin.id inner join address on address_sub_admin.address_id = address.address_id   WHERE address.pin_code = ?;', [pincode]);
+    const locationData = rows[0];
+  console.log(rows)
+    if (!locationData) {
+      return res.status(404).json({ message: 'Pincode not found' });
+    }
+    // console.log(locationData)
+
+    res.json(locationData);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    res.status(500).json({ message: 'Internal server error' }); // Handle errors appropriately
+  }
+});
+
 
 /////****Search suggetion
 app.get("/search", async (req, res) => {
@@ -2276,12 +2310,40 @@ app.get("/doctors", async (req, res) => {
       .json({ error: "Error retrieving product details from the database" });
   }
 });
+
+// all specilizes doctores
 app.get("/specializes-doctors", async (req, res) => {
   try {
     const query = "select DISTINCT specializes from doctors_details ";
 
     const doctorResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+
+          resolve(result);
+        }
+      });
+    });
+    return res.json([doctorResults]);
+  } catch (error) {
+    console.error("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Error retrieving product details from the database" });
+  }
+});
+// all specilizes doctores by location
+app.get("/specializes-doctors/:current_pin_code", async (req, res) => {
+  const current_pin_code = req.params.current_pin_code;
+  console.log(current_pin_code)
+  try {
+    const query = "SELECT DISTINCT specializes FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
+
+    const doctorResults = await new Promise((resolve, reject) => {
+      db.query(query,[current_pin_code], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -4675,6 +4737,30 @@ app.get("/superadmin/partner", (req, res) => {
     res.status(500).send("data not found");
   }
 });
+//This for all Partners Data
+app.get("/superadmin/partner/details/:id", (req, res) => {
+  if (req.session.user) {
+
+    const partner_id = req.params.id;
+    const user_id = req.session.user.id;
+    const sql1 = "select * from b2c_partner where id = ?;";
+
+    db.query(sql1, [partner_id], (err, data) => {
+      if (err) {
+        return res.json(err);
+      }
+      if (data.length > 0) {
+        //  res.json("Success");
+        // console.log(data)
+        return res.json(data);
+      } else {
+        return res.json(null);
+      }
+    });
+  } else {
+    res.status(500).send("data not found");
+  }
+});
 //This for all B2BEmployee Data
 app.get("/superadmin/b2b/employee", (req, res) => {
   if (req.session.user) {
@@ -5547,6 +5633,7 @@ app.post("/sub-admin/signup", async (req, res) => {
 });
 app.post("/sub_admin/complete_profile", async (req, res) => {
   try {
+    console.log(req.body)
     // const sql = "Insert into sub_admin (`LicenceImageId`,`SubAdminImageId`) values(?) where id = ?;";
     const sql =
       "UPDATE sub_admin SET LicenceImageId = ?, SubAdminImageId= ? , owner_name = ? , owner_phonenumber=? WHERE id = ?;";
@@ -5558,11 +5645,11 @@ app.post("/sub_admin/complete_profile", async (req, res) => {
       db.query(
         sql,
         [
-          req.body.LicenceImageId,
-          req.body.SubAdminImageId,
-          req.body.owner_name,
-          req.body.owner_phonenumber,
-          req.body.subadmin_id,
+          req.body[0].LicenceImageId,
+          req.body[0].SubAdminImageId,
+          req.body[0].owner_name,
+          req.body[0].owner_phonenumber,
+          req.body[0].subadmin_id,
         ],
         (err, data) => {
           if (err) {
@@ -5577,12 +5664,12 @@ app.post("/sub_admin/complete_profile", async (req, res) => {
       return res.json(error);
     }
     const address = [
-      req.body.Village,
-      req.body.P_O,
-      req.body.City,
-      req.body.district,
-      req.body.state,
-      req.body.pin,
+      req.body[0].Village,
+      req.body[0].P_O,
+      req.body[0].City,
+      req.body[0].district,
+      req.body[0].state,
+      req.body[0].pin,
     ];
     const createAddress = await new Promise((resolve, reject) => {
       const sql =
@@ -5600,7 +5687,7 @@ app.post("/sub_admin/complete_profile", async (req, res) => {
     const insertAddressSubAdmin = await new Promise((resolve, reject) => {
       const sql1 =
         "insert into address_sub_admin (address_id,sub_admin_id)values(?,?);";
-      db.query(sql1, [createAddress, req.body.subadmin_id], (err, result) => {
+      db.query(sql1, [createAddress, req.body[0].subadmin_id], (err, result) => {
         if (err) {
           reject(err);
         } else {
@@ -5610,15 +5697,32 @@ app.post("/sub_admin/complete_profile", async (req, res) => {
         }
       });
     });
+    const pinCodes = req.body[1];
+    const insertAllPinCodes = pinCodes.map((pin) => {
+      return new Promise((resolve, reject) => {
+        const sql = "insert into sub_admin_service_pincodes (pin_code,sub_admin_id)values(?,?);";
+        db.query(sql, [pin.pin_code, req.body[0].subadmin_id], (err, result) => {
+          if (err) {
+            console.error("Database error: " + err);
+            reject(err);
+          } else {
+            // console.log(result[0]);
+            resolve(result[0]);
+          }
+        });
+      });
+    });
+
+
     const createdAt = new Date().toISOString().split("T")[0];
 
     const sub_admin_details = [
-      req.body.subadmin_id,
-      req.body.landmark,
-      req.body.OpeningTime,
-      req.body.CloseingTime,
-      req.body.Reg_id,
-      req.body.description,
+      req.body[0].subadmin_id,
+      req.body[0].landmark,
+      req.body[0].OpeningTime,
+      req.body[0].CloseingTime,
+      req.body[0].Reg_id,
+      req.body[0].description,
       createdAt,
     ];
     const insertSubAdminDetails = await new Promise((resolve, reject) => {
