@@ -157,7 +157,7 @@ app.get('/all/pincodes', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM sub_admin inner join address_sub_admin on address_sub_admin.sub_admin_id = sub_admin.id inner join address on address_sub_admin.address_id = address.address_id   WHERE address.pin_code = ?;', [pincode]);
     const locationData = rows[0];
-  console.log(rows)
+    console.log(rows)
     if (!locationData) {
       return res.status(404).json({ message: 'Pincode not found' });
     }
@@ -2138,9 +2138,9 @@ app.get("/product/suggestedProducts", async (req, res) => {
     try {
       // const user_id = req.session.user.id;
       const sql =
-        "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.City = ?;";
+        "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.pin_code = ?;";
       const productResults = await new Promise((resolve, reject) => {
-        db.query(sql, [address[0].City], (err, result) => {
+        db.query(sql, [address[0].pin_code], (err, result) => {
           if (err) {
             console.error("Error retrieving data: " + err.message);
             reject(err);
@@ -2311,6 +2311,53 @@ app.get("/doctors", async (req, res) => {
   }
 });
 
+// all specilizes doctores by location
+app.get("/doctors/:current_pin_code", async (req, res) => {
+  const current_pin_code = req.params.current_pin_code;
+  // console.log(current_pin_code)
+  try {
+    const query = "SELECT * FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
+    const doctorResults = await new Promise((resolve, reject) => {
+      db.query(query,[current_pin_code], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+
+          resolve(result);
+        }
+      });
+    });
+
+    if (doctorResults.length > 0) {
+      const imagesPromises = doctorResults.map((doctor) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [doctor.doctor_imageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      const images = await Promise.all(imagesPromises);
+      return res.json([doctorResults, images]);
+    } else {
+      return res.json(null); // Return an empty response if no doctor details found
+    }
+  } catch (error) {
+    console.error("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Error retrieving product details from the database" });
+  }
+
+});
+
 // all specilizes doctores
 app.get("/specializes-doctors", async (req, res) => {
   try {
@@ -2338,12 +2385,12 @@ app.get("/specializes-doctors", async (req, res) => {
 // all specilizes doctores by location
 app.get("/specializes-doctors/:current_pin_code", async (req, res) => {
   const current_pin_code = req.params.current_pin_code;
-  console.log(current_pin_code)
+  // console.log(current_pin_code)
   try {
     const query = "SELECT DISTINCT specializes FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
 
     const doctorResults = await new Promise((resolve, reject) => {
-      db.query(query,[current_pin_code], (err, result) => {
+      db.query(query, [current_pin_code], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2362,25 +2409,55 @@ app.get("/specializes-doctors/:current_pin_code", async (req, res) => {
   }
 });
 
-app.get("/product/:location", (req, res) => {
+app.get("/product/:location", async (req, res) => {
   const location = req.params.location;
+  // console.log(location)
 
-  const sql =
-    "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.City = ?;";
 
-  db.query(sql, [location], (err, data) => {
-    if (err) {
-      return res.json("Error");
-    }
-    // console.log(data)
-    if (data.length > 0) {
-      //  res.json("Success");
-      // console.log(data)
-      return res.json(data);
+  try {
+    const query =   "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.pin_code = ?;";
+
+    const productResults = await new Promise((resolve, reject) => {
+      db.query(query,[location] ,(err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          // console.log('Data retrieved successfully');
+          resolve(result);
+        }
+      });
+    });
+
+    if (productResults.length > 0) {
+      const imagesPromises = productResults.map((product) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [product.productImageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      const images = await Promise.all(imagesPromises);
+      // console.log(images);
+      return res.json([productResults, images]);
     } else {
-      return res.json("Faile");
+      return res.json(null); // Return an empty response if no doctor details found
     }
-  });
+  } catch (error) {
+    console.error("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Error retrieving product details from the database" });
+  }
+
 });
 app.get("/medicines", (req, res) => {
   const sql = "Select * from product";
@@ -5968,6 +6045,108 @@ app.get("/laboratory/laboratorys", async (req, res) => {
   }
 
 });
+
+// All Labs
+app.get("/laboratory/laboratorys/:current_pin_code", async (req, res) => {
+  const current_pin_code = req.params.current_pin_code;
+
+  try {
+    // const user_id = req.session.user.id;
+    const query =
+      "SELECT sub_admin.id,name,phone,role,LicenceImageId,SubAdminImageId,description,landmark,OpeningTime,CloseingTime,city FROM sub_admin inner join sub_admin_details On sub_admin.id = sub_admin_details.sub_admin_id inner join address_sub_admin On sub_admin.id = address_sub_admin.sub_admin_id inner join address On address_sub_admin.address_id = address.address_id  where role = 'Laboratory' and permission = 'Approve' and address.pin_code = ?;";
+    const subResults = await new Promise((resolve, reject) => {
+      db.query(query,[current_pin_code], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+
+    if (subResults.length > 0) {
+      const imagesPromises = subResults.map((sub_admin) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [sub_admin.SubAdminImageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      const images = await Promise.all(imagesPromises);
+      // console.log(images);
+      return res.json([subResults, images]);
+    } else {
+      return res.json([]); // Return an empty response if no doctor details found
+    }
+  } catch (error) {
+    console.error("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Error retrieving product details from the database" });
+  }
+
+});
+
+//All Lab Tests
+app.get("/laboratory/lab_tests/:current_pin_code", async (req, res) => {
+  const current_pin_code = req.params.current_pin_code;
+
+  try {
+    // const user_id = req.session.user.id;
+    const query = "select  Test_id, Test_Name ,Test_Desc,Clinic_id,test_imageId,Price from laboratory_tests_details INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id inner join address_sub_admin on address_sub_admin.sub_admin_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where address.pin_code = ? ;";
+    const subResults = await new Promise((resolve, reject) => {
+      db.query(query,[current_pin_code], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+
+    if (subResults.length > 0) {
+      const imagesPromises = subResults.map((sub_admin) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [sub_admin.test_imageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      const images = await Promise.all(imagesPromises);
+      // console.log([subResults, images]);
+      return res.json([subResults, images]);
+    } else {
+      return res.json([]); // Return an empty response if no doctor details found
+    }
+  } catch (error) {
+    console.error("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Error retrieving product details from the database" });
+  }
+
+
+});
+
+
 // Particular Laboratory
 app.get("/particular-laboratory/:client_id", async (req, res) => {
   const client_id = req.params.client_id;
@@ -6131,7 +6310,7 @@ app.get("/madicine/medicineshops/:location", (req, res) => {
       // console.log(data)
       return res.json(data);
     } else {
-      return res.json("Faile");
+      return res.json(null);
     }
   });
 });
