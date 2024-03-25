@@ -2502,7 +2502,7 @@ app.get("/catagorys", async (req, res) => {
 app.get("/doctors", async (req, res) => {
 
   try {
-    const query = "SELECT *,doctors_details.id as doc_id FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id";
+    const query = "SELECT *,doctors_details.id as doc_id FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id";
 
     // const query = "select * from doctors_details;";
     const doctorResults = await new Promise((resolve, reject) => {
@@ -2550,7 +2550,7 @@ app.get("/doctors/:current_pin_code", async (req, res) => {
   const current_pin_code = req.params.current_pin_code;
   // console.log(current_pin_code)
   try {
-    const query = "SELECT *,doctors_details.id as doc_id FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
+    const query = "SELECT *,doctors_details.id as doc_id FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
     const doctorResults = await new Promise((resolve, reject) => {
       db.query(query, [current_pin_code], (err, result) => {
         if (err) {
@@ -2620,7 +2620,7 @@ app.get("/specializes-doctors/:current_pin_code", async (req, res) => {
   const current_pin_code = req.params.current_pin_code;
   // console.log(current_pin_code)
   try {
-    const query = "SELECT DISTINCT specializes FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
+    const query = "SELECT DISTINCT specializes FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
 
     const doctorResults = await new Promise((resolve, reject) => {
       db.query(query, [current_pin_code], (err, result) => {
@@ -2910,7 +2910,7 @@ app.post("/addtocart/:product_id/:quantity", async (req, res) => {
       });
       if (productInfo.length > 0) {
         const sql =
-          "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+          "UPDATE carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
         db.query(
           sql,
           [req.params.product_id, req.session.user.id],
@@ -2958,7 +2958,7 @@ app.post("/addtocart/:product_id/:quantity", async (req, res) => {
       });
       if (productInfo.length > 0) {
         const sql =
-          "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+          "UPDATE  carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
         db.query(
           sql,
           [req.params.product_id, req.session.user.id],
@@ -2996,7 +2996,7 @@ app.post("/product/increase_quantity/:product_id", (req, res) => {
       const value = [req.params.product_id, req.session.user.id];
 
       const sql =
-        "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+        "UPDATE carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
       db.query(
         sql,
         [req.params.product_id, req.session.user.id],
@@ -3012,7 +3012,7 @@ app.post("/product/increase_quantity/:product_id", (req, res) => {
       const value = [req.params.product_id, req.session.user.id];
 
       const sql =
-        "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+        "UPDATE carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
       db.query(
         sql,
         [req.params.product_id, req.session.user.id],
@@ -3039,7 +3039,7 @@ app.post("/product/decrease_quantity/:product_id", async (req, res) => {
       const value = [req.params.product_id, req.session.user.id];
 
       const sql =
-        "UPDATE hh_dev_db.carttable SET quantity = quantity-1 WHERE product_id = ? and user_id = ?;";
+        "UPDATE carttable SET quantity = quantity-1 WHERE product_id = ? and user_id = ?;";
       db.query(
         sql,
         [req.params.product_id, req.session.user.id],
@@ -3083,7 +3083,7 @@ app.post("/product/decrease_quantity/:product_id", async (req, res) => {
       const value = [req.params.product_id, req.session.user.id];
 
       const sql =
-        "UPDATE hh_dev_db.carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
+        "UPDATE carttable SET quantity = quantity+1 WHERE product_id = ? and user_id = ?;";
       db.query(
         sql,
         [req.params.product_id, req.session.user.id],
@@ -5552,7 +5552,7 @@ app.get("/superadmin/lab/test/:id", (req, res) => {
 
   // View Product details by id
   const sql =
-    "SELECT * FROM hh_dev_db.labtestbookedtable where id = ?;"
+    "SELECT * FROM labtestbookedtable where id = ?;"
   db.query(sql, [labtest_id], (err, data) => {
     if (err) {
       console.error("Error updating order status:", err);
@@ -6848,7 +6848,7 @@ app.get("/medicineshop/products/:id", async (req, res) => {
   const id = req.params.id;
   const query =
     " select * from product  INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id where sub_admin_id = ? ";
-  const query1 = " SELECT * FROM hh_dev_db.sub_admin where id = ?;";
+  const query1 = " SELECT * FROM  sub_admin where id = ?;";
   try {
     const medicineShop = await new Promise((resolve, reject) => {
       db.query(query1, [id], (err, result) => {
