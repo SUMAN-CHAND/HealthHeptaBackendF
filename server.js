@@ -448,26 +448,20 @@ app.post("/doctorspecializes", async (req, res) => {
   const likefiled = req.body.specializes; // assuming 'specialization' is the property
 
   const input = `%${likefiled}%`;
+  // console.log(likefiled)
 
   try {
     const query = `
-    SELECT doctors_details.id,doc_name,doc_desc,location,clinic,clinic_id,clinic_desc,type,doctor_imageId,address.pin_code  from doctors_details
+    SELECT doctors_details.id,doc_name,doc_desc,location,clinic,clinic_id,clinic_desc,type,doctor_imageId,address.pin_code,specializes  from doctors_details
     INNER JOIN sub_admin ON sub_admin.id = doctors_details.clinic_id 
     INNER JOIN address_sub_admin ON address_sub_admin.sub_admin_id = sub_admin.id 
     INNER JOIN address ON address_sub_admin.sub_admin_id = address.address_id   
-    where doc_name Like ?
-    Or doc_desc Like ?
-    Or specializes Like ? 
-    Or location Like ? 
-     Or pin_code Like ?
-    Or clinic Like ?  
-    Or type Like ?;
-   `;
+    where  specializes = ?;`;
 
     const doctorResults = await new Promise((resolve, reject) => {
       db.query(
         query,
-        [input, input, input, input, input, input, input],
+        [likefiled],
         (err, results) => {
           if (err) {
             console.error(err);
@@ -513,7 +507,6 @@ app.post("/doctorspecializes", async (req, res) => {
 
 app.get("/doctorsearch/:id", async (req, res) => {
   const doctor_id = Number(req.params.id);
-
   try {
     // const user_id = req.session.user.id;
     const query = "select * from doctors_details where id = ?;";
@@ -1336,6 +1329,7 @@ app.post("/search", async (req, res) => {
     product_price,
     discount,
     description,
+    productOf,
     phone,
     productImageId
 FROM
@@ -1477,6 +1471,244 @@ WHERE
         and permission = 'Approve';`;
     const MedicineShops = await new Promise((resolve, reject) => {
       db.query(query3, [input, input], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+    let MedicineShopsImage;
+    if (MedicineShops.length > 0) {
+      const imagesPromises = MedicineShops.map((mshop) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [mshop.SubAdminImageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      MedicineShopsImage = await Promise.all(imagesPromises);
+    }
+    // console.log([
+    //   productResults,
+    //   images,
+    //   LabResults,
+    //   LabTestimages,
+    //   DoctorResults,
+    //   Doctorimages,
+    //   MedicineShops,
+    //   MedicineShopsImage,
+    // ]);
+    // return res.json([productResults, images]);
+
+    return res.json([
+      productResults,
+      images,
+      LabResults,
+      LabTestimages,
+      DoctorResults,
+      Doctorimages,
+      MedicineShops,
+      MedicineShopsImage,
+    ]);
+  } catch (error) {
+    console.error("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Error retrieving product details from the database" });
+  }
+  // const results = await database.searchMedicines(medicineName, pharmacyName, medicineType, location);
+
+  // res.json(results);
+});
+
+//  Define the search route pin Code is present 
+app.post("/search/:current_pin_code", async (req, res) => {
+  const current_pin_code  = req.params.current_pin_code;
+  // console.log(current_pin_code)
+  // console.log(req.body);
+  let likefiled;
+
+  if (req.body.from === "category") {
+    likefiled = req.body.input;
+  } else {
+    likefiled = req.body.input[0];
+  }
+  // console.log(likefiled)
+  const input = `%${likefiled}%`;
+  // const input = %${likefiled}%;
+
+  //This is for Product
+  try {
+    // const user_id = req.session.user.id;
+    // const query =
+    //   "SELECT  sub_admin.id ,product_sub_admin.product_id as id ,name , address_sub_admin.address_id  ,City,product_name,typeOfMedicine,product.product_id,product_price,discount,description,phone,productImageId FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN product_sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN product ON product_sub_admin.product_id = product.product_id where product.product_name Like ? Or product.category Like ? Or address.city Like ? Or name Like  ?  Or typeOfMedicine Like ?;";
+
+    const query = `SELECT 
+    sub_admin.id ,
+    product_sub_admin.product_id AS id,
+    name,
+    address_sub_admin.address_id,
+    City,
+    product_name,
+    typeOfMedicine,
+    product.product_id,
+    product_price,
+    discount,
+    description,
+    productOf,
+    phone,
+    productImageId
+FROM
+    product
+        LEFT JOIN
+    product_sub_admin ON product_sub_admin.product_id = product.product_id
+        left JOIN
+    sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id
+        left JOIN
+    address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id
+        left JOIN
+    address ON address_sub_admin.address_id = address.address_id
+     
+WHERE ( address.pin_code = ?) and (
+    product.product_name LIKE CONCAT('%', ?, '%')
+        OR product.category LIKE CONCAT('%', ?, '%')
+        OR address.city LIKE CONCAT('%', ?, '%')
+        OR name LIKE CONCAT('%', ?, '%')
+        OR typeOfMedicine LIKE CONCAT('%', ?, '%'))
+        ;
+
+     `;
+
+    const productResults = await new Promise((resolve, reject) => {
+      db.query(query, [current_pin_code,input, input, input, input, input], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+    let images;
+    if (productResults.length > 0) {
+      const imagesPromises = productResults.map((product) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [product.productImageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      images = await Promise.all(imagesPromises);
+
+    }
+    //This is for Lab Test
+    const query1 =
+      "SELECT  sub_admin.id ,Test_id,Test_Name,Test_Desc,test_imageId,Price FROM address_sub_admin" +
+      " INNER JOIN address ON address_sub_admin.address_id = address.address_id" +
+      " INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id " +
+      " INNER JOIN laboratory_tests_details ON laboratory_tests_details.clinic_id = sub_admin.id" +
+      " where (address.pin_code = ? )and  (laboratory_tests_details.Test_Name Like ? Or address.city Like ? Or name Like  ?) ;";
+    const LabResults = await new Promise((resolve, reject) => {
+      db.query(query1, [current_pin_code,input, input, input, input, input], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          // console.log('Data retrieved successfully');
+          resolve(result);
+        }
+      });
+    });
+    let LabTestimages;
+    if (LabResults.length > 0) {
+      const imagesPromises = LabResults.map((lab) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [lab.test_imageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      LabTestimages = await Promise.all(imagesPromises);
+    }
+    //This is for Doctors
+    const query2 = `
+        SELECT doctors_details.id,doc_name,doc_desc,location,clinic,clinic_id,clinic_desc,type,doctor_imageId,address.pin_code  from doctors_details
+    INNER JOIN sub_admin ON sub_admin.id = doctors_details.clinic_id 
+    INNER JOIN address_sub_admin ON address_sub_admin.sub_admin_id = sub_admin.id 
+    INNER JOIN address ON address_sub_admin.sub_admin_id = address.address_id   
+    where (address.pin_code = ? )and (doc_name Like ?
+    Or doc_desc Like ?
+    Or specializes Like ? 
+    Or location Like ? 
+    Or pin_code Like ?)
+    `
+    ;
+    const DoctorResults = await new Promise((resolve, reject) => {
+      db.query(query2, [current_pin_code,input, input, input, input, input], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          // console.log('Data retrieved successfully');
+          resolve(result);
+        }
+      });
+    });
+    let Doctorimages;
+    if (DoctorResults.length > 0) {
+      const imagesPromises = DoctorResults.map((doctor) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [doctor.doctor_imageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      Doctorimages = await Promise.all(imagesPromises);
+    }
+    const query3 = `
+        SELECT sub_admin.id,name,Landmark,SubAdminImageId,address.pin_code  from sub_admin
+        INNER JOIN address_sub_admin ON address_sub_admin.sub_admin_id = sub_admin.id 
+        INNER JOIN sub_admin_details ON sub_admin_details.sub_admin_id = sub_admin.id 
+        INNER JOIN address ON address_sub_admin.sub_admin_id = address.address_id   
+        where (address.pin_code = ? )and name Like ?
+        Or Landmark Like ?
+        and role = 'Medicine Shop'
+        and permission = 'Approve'`;
+    const MedicineShops = await new Promise((resolve, reject) => {
+      db.query(query3, [current_pin_code,input, input], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2270,7 +2502,9 @@ app.get("/catagorys", async (req, res) => {
 app.get("/doctors", async (req, res) => {
 
   try {
-    const query = "select * from doctors_details;";
+    const query = "SELECT *,doctors_details.id as doc_id FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id";
+
+    // const query = "select * from doctors_details;";
     const doctorResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -2316,14 +2550,13 @@ app.get("/doctors/:current_pin_code", async (req, res) => {
   const current_pin_code = req.params.current_pin_code;
   // console.log(current_pin_code)
   try {
-    const query = "SELECT * FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
+    const query = "SELECT *,doctors_details.id as doc_id FROM hh_dev_db.doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
     const doctorResults = await new Promise((resolve, reject) => {
-      db.query(query,[current_pin_code], (err, result) => {
+      db.query(query, [current_pin_code], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
         } else {
-
           resolve(result);
         }
       });
@@ -2415,10 +2648,10 @@ app.get("/product/:location", async (req, res) => {
 
 
   try {
-    const query =   "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.pin_code = ?;";
+    const query = "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.pin_code = ?;";
 
     const productResults = await new Promise((resolve, reject) => {
-      db.query(query,[location] ,(err, result) => {
+      db.query(query, [location], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -5951,8 +6184,10 @@ app.post(
 app.get("/madicine/medicineshops", async (req, res) => {
   try {
     // const user_id = req.session.user.id;
-    const query =
-      "SELECT * FROM sub_admin where role = 'Medicine Shop' and permission = 'Approve'";
+    const query = "SELECT  sub_admin.id ,name ,phone ,role, address_sub_admin.address_id ,Village ,P_O,City,district,State,pin_code,SubAdminImageId  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id where role = 'Medicine Shop' and permission = 'Approve'";
+
+    // const query =
+    //   "SELECT * FROM sub_admin where role = 'Medicine Shop' and permission = 'Approve'";
     const subResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -6055,7 +6290,7 @@ app.get("/laboratory/laboratorys/:current_pin_code", async (req, res) => {
     const query =
       "SELECT sub_admin.id,name,phone,role,LicenceImageId,SubAdminImageId,description,landmark,OpeningTime,CloseingTime,city FROM sub_admin inner join sub_admin_details On sub_admin.id = sub_admin_details.sub_admin_id inner join address_sub_admin On sub_admin.id = address_sub_admin.sub_admin_id inner join address On address_sub_admin.address_id = address.address_id  where role = 'Laboratory' and permission = 'Approve' and address.pin_code = ?;";
     const subResults = await new Promise((resolve, reject) => {
-      db.query(query,[current_pin_code], (err, result) => {
+      db.query(query, [current_pin_code], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -6104,7 +6339,7 @@ app.get("/laboratory/lab_tests/:current_pin_code", async (req, res) => {
     // const user_id = req.session.user.id;
     const query = "select  Test_id, Test_Name ,Test_Desc,Clinic_id,test_imageId,Price from laboratory_tests_details INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id inner join address_sub_admin on address_sub_admin.sub_admin_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where address.pin_code = ? ;";
     const subResults = await new Promise((resolve, reject) => {
-      db.query(query,[current_pin_code], (err, result) => {
+      db.query(query, [current_pin_code], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -6203,7 +6438,7 @@ app.get("/laboratory/lab_tests", async (req, res) => {
   try {
     // const user_id = req.session.user.id;
     const query =
-      "select  Test_id, Test_Name ,Test_Desc,Clinic_id,test_imageId,Landmark,Price from laboratory_tests_details INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id INNER JOIN sub_admin_details ON sub_admin.id = sub_admin_details.sub_admin_id ;";
+      "select  Test_id, Test_Name ,Test_Desc,Clinic_id,test_imageId,pin_code,Landmark,Price from laboratory_tests_details INNER JOIN sub_admin ON sub_admin.id = laboratory_tests_details.clinic_id INNER JOIN sub_admin_details ON sub_admin.id = sub_admin_details.sub_admin_id INNER JOIN address_sub_admin ON address_sub_admin.id = sub_admin.id INNER JOIN address ON address.address_id = address_sub_admin.address_id;"
     const subResults = await new Promise((resolve, reject) => {
       db.query(query, (err, result) => {
         if (err) {
@@ -6295,24 +6530,47 @@ app.get("/book/lab-test/:id", async (req, res) => {
       .json({ error: "Error retrieving product details from the database" });
   }
 });
-app.get("/madicine/medicineshops/:location", (req, res) => {
+app.get("/madicine/medicineshops/:location", async (req, res) => {
   // console.log(req.params.location)
   const location = req.params.location;
-  const sql =
-    "SELECT  sub_admin.id ,name ,phone ,role, address_sub_admin.address_id ,Village ,P_O,City,district,State,pin_code  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id where address.City = ?";
+  const query =
+    "SELECT  sub_admin.id ,name ,phone ,role, address_sub_admin.address_id ,Village ,P_O,City,district,State,pin_code,SubAdminImageId  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id where role = 'Medicine Shop' and permission = 'Approve' and address.pin_code = ? ";
+    const subResults = await new Promise((resolve, reject) => {
+      db.query(query,[location], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          // console.log('Data retrieved successfully');
+          // console.log(result)
+          resolve(result);
+        }
+      });
+    });
 
-  db.query(sql, [location], (err, data) => {
-    if (err) {
-      return res.json(err);
-    }
-    if (data.length > 0) {
-      //  res.json("Success");
-      // console.log(data)
-      return res.json(data);
+    if (subResults.length > 0) {
+      const imagesPromises = subResults.map((sub_admin) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [sub_admin.SubAdminImageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      const images = await Promise.all(imagesPromises);
+      // console.log(images);
+      return res.json([subResults, images]);
     } else {
-      return res.json(null);
+      return res.json([]); // Return an empty response if no doctor details found
     }
-  });
+
 });
 
 app.get("/sub-admin/home/profile", async (req, res) => {
