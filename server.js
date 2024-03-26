@@ -1532,7 +1532,7 @@ WHERE
 
 //  Define the search route pin Code is present 
 app.post("/search/:current_pin_code", async (req, res) => {
-  const current_pin_code  = req.params.current_pin_code;
+  const current_pin_code = req.params.current_pin_code;
   // console.log(current_pin_code)
   // console.log(req.body);
   let likefiled;
@@ -1589,7 +1589,7 @@ WHERE ( address.pin_code = ?) and (
      `;
 
     const productResults = await new Promise((resolve, reject) => {
-      db.query(query, [current_pin_code,input, input, input, input, input], (err, result) => {
+      db.query(query, [current_pin_code, input, input, input, input, input], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -1626,7 +1626,7 @@ WHERE ( address.pin_code = ?) and (
       " INNER JOIN laboratory_tests_details ON laboratory_tests_details.clinic_id = sub_admin.id" +
       " where (address.pin_code = ? )and  (laboratory_tests_details.Test_Name Like ? Or address.city Like ? Or name Like  ?) ;";
     const LabResults = await new Promise((resolve, reject) => {
-      db.query(query1, [current_pin_code,input, input, input, input, input], (err, result) => {
+      db.query(query1, [current_pin_code, input, input, input, input, input], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -1667,9 +1667,9 @@ WHERE ( address.pin_code = ?) and (
     Or location Like ? 
     Or pin_code Like ?)
     `
-    ;
+      ;
     const DoctorResults = await new Promise((resolve, reject) => {
-      db.query(query2, [current_pin_code,input, input, input, input, input], (err, result) => {
+      db.query(query2, [current_pin_code, input, input, input, input, input], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -1708,7 +1708,7 @@ WHERE ( address.pin_code = ?) and (
         and role = 'Medicine Shop'
         and permission = 'Approve'`;
     const MedicineShops = await new Promise((resolve, reject) => {
-      db.query(query3, [current_pin_code,input, input], (err, result) => {
+      db.query(query3, [current_pin_code, input, input], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2350,6 +2350,116 @@ app.get("/product", async (req, res) => {
       .json({ error: "Error retrieving product details from the database" });
   }
 });
+app.get("/popular/product", async (req, res) => {
+
+  try {
+    const query = `SELECT 
+    product.product_id,
+    COUNT(*) AS edit_count,
+    product_name,
+    product_price,
+    category,
+    discount,
+    description,
+    DrugOrNot,
+    product_quantity,
+    productOf,
+    moleculesName,
+    manufacturing_Company_Name,
+    productImageId,
+    cgst,
+    sgst,
+    typeOfMedicine,
+    fromOfMedicine
+FROM
+    product
+        INNER JOIN
+    order_items ON order_items.product_id = product.product_id
+GROUP BY product.product_id
+ORDER BY edit_count DESC;
+`;
+    const productResultsByOrders = await new Promise((resolve, reject) => {
+      db.query(query, (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          // console.log('Data retrieved successfully');
+          resolve(result);
+        }
+      });
+    });
+    const discountQuery = `
+    SELECT 
+        
+        product.product_id,
+        COUNT(*) AS edit_count,
+        product_name,
+        product_price,
+        category,
+        discount,
+        description,
+        DrugOrNot,
+        product_quantity,
+        productOf,
+        moleculesName,
+        manufacturing_Company_Name,
+        productImageId,
+        cgst,
+        sgst,
+        typeOfMedicine,
+        fromOfMedicine
+    FROM
+        product
+    GROUP BY product.product_id
+    ORDER BY discount DESC;`;
+    const productResultsByDiscount = await new Promise((resolve, reject) => {
+      db.query(discountQuery, (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          // console.log('Data retrieved successfully');
+          resolve(result);
+        }
+      });
+    });
+
+    // var productResults = [...productResultsByOrders,...productResultsByDiscount];
+
+    const productResults = productResultsByDiscount.concat(productResultsByOrders.filter(item2 =>
+      !productResultsByDiscount.some(item1 => item1.id === item2.id)
+    ));
+
+    if (productResults.length > 0) {
+      const imagesPromises = productResults.map((product) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [product.productImageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      const images = await Promise.all(imagesPromises);
+      // console.log(images);
+      return res.json([productResults, images]);
+    } else {
+      return res.json([]); // Return an empty response if no doctor details found
+    }
+  } catch (error) {
+    console.error("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Error retrieving product details from the database" });
+  }
+});
 //this give suggested Product on basis of location
 app.get("/product/suggestedProducts", async (req, res) => {
   // app.get("/superadmin/product", async (req, res) => {
@@ -2548,11 +2658,13 @@ app.get("/doctors", async (req, res) => {
 // all specilizes doctores by location
 app.get("/doctors/:current_pin_code", async (req, res) => {
   const current_pin_code = req.params.current_pin_code;
+  const closestPinCodeup = (parseInt(current_pin_code)+1);
+  const closestPinCodedown = (parseInt(current_pin_code)-1);
   // console.log(current_pin_code)
   try {
-    const query = "SELECT *,doctors_details.id as doc_id FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
+    const query = "SELECT *,doctors_details.id as doc_id FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?  or address.pin_code = ? or address.pin_code = ?; ";
     const doctorResults = await new Promise((resolve, reject) => {
-      db.query(query, [current_pin_code], (err, result) => {
+      db.query(query, [current_pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2618,12 +2730,14 @@ app.get("/specializes-doctors", async (req, res) => {
 // all specilizes doctores by location
 app.get("/specializes-doctors/:current_pin_code", async (req, res) => {
   const current_pin_code = req.params.current_pin_code;
+  const closestPinCodeup = (parseInt(current_pin_code)+1);
+  const closestPinCodedown = (parseInt(current_pin_code)-1);
   // console.log(current_pin_code)
   try {
-    const query = "SELECT DISTINCT specializes FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?; ";
+    const query = "SELECT DISTINCT specializes FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ? or address.pin_code = ? or address.pin_code = ?; ";
 
     const doctorResults = await new Promise((resolve, reject) => {
-      db.query(query, [current_pin_code], (err, result) => {
+      db.query(query, [current_pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2643,15 +2757,16 @@ app.get("/specializes-doctors/:current_pin_code", async (req, res) => {
 });
 
 app.get("/product/:location", async (req, res) => {
-  const location = req.params.location;
+  const pin_code = req.params.location;
   // console.log(location)
-
+  const closestPinCodeup = (parseInt(pin_code)+1);
+  const closestPinCodedown = (parseInt(pin_code)-1);
 
   try {
-    const query = "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.pin_code = ?;";
+    const query = "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where  address.pin_code = ? or address.pin_code = ? or address.pin_code = ?;";
 
     const productResults = await new Promise((resolve, reject) => {
-      db.query(query, [location], (err, result) => {
+      db.query(query, [pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2692,6 +2807,163 @@ app.get("/product/:location", async (req, res) => {
   }
 
 });
+app.get("/popular/product/:location", async (req, res) => {
+  const pin_code = req.params.location;
+  // console.log(location)
+
+
+  try {
+    // const query = "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where address.pin_code = ?;";
+    const query = `
+    SELECT 
+        product.product_id,
+        COUNT(*) AS edit_count,
+        product_name,
+        product_price,
+        category,
+        discount,
+        description,
+        DrugOrNot,
+        product_quantity,
+        productOf,
+        moleculesName,
+        manufacturing_Company_Name,
+        productImageId,
+        cgst,
+        sgst,
+        typeOfMedicine,
+        fromOfMedicine
+    FROM
+        product
+            INNER JOIN
+        order_items ON order_items.product_id = product.product_id
+            INNER JOIN
+        product_sub_admin ON product.product_id = product_sub_admin.product_id
+            INNER JOIN
+        sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id
+            INNER JOIN
+        address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id
+            INNER JOIN
+        address ON address_sub_admin.address_id = address.address_id
+    WHERE
+        address.pin_code = ? or address.pin_code = ?
+    GROUP BY product.product_id
+    ORDER BY edit_count DESC;
+    `;
+
+    const closestPinCodeup = (parseInt(pin_code)+1);
+    const closestPinCodedown = (parseInt(pin_code)-1);
+    const productResultsByOrders = await new Promise((resolve, reject) => {
+      db.query(query,[pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          // console.log('Data retrieved successfully');
+          resolve(result);
+        }
+      });
+    });
+
+    const discountQuery = `
+    
+    SELECT 
+        product.product_id,
+        COUNT(*) AS edit_count,
+        product_name,
+        product_price,
+        category,
+        discount,
+        description,
+        DrugOrNot,
+        product_quantity,
+        productOf,
+        moleculesName,
+        manufacturing_Company_Name,
+        productImageId,
+        cgst,
+        sgst,
+        typeOfMedicine,
+        fromOfMedicine
+    FROM
+        product
+            INNER JOIN
+        order_items ON order_items.product_id = product.product_id
+            INNER JOIN
+        product_sub_admin ON product.product_id = product_sub_admin.product_id
+            INNER JOIN
+        sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id
+            INNER JOIN
+        address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id
+            INNER JOIN
+        address ON address_sub_admin.address_id = address.address_id
+    WHERE
+        address.pin_code = ? or address.pin_code = ? or address.pin_code = ?
+    GROUP BY product.product_id
+    ORDER BY discount DESC;`;
+    const productResultsByDiscount = await new Promise((resolve, reject) => {
+      db.query(discountQuery,[pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
+        if (err) {
+          console.error("Error retrieving data: " + err.message);
+          reject(err);
+        } else {
+          // console.log('Data retrieved successfully');
+          resolve(result);
+        }
+      });
+    });
+
+    // var productResults = [...productResultsByOrders,...productResultsByDiscount];
+
+    const productResults = productResultsByDiscount.concat(productResultsByOrders.filter(item2 =>
+      !productResultsByDiscount.some(item1 => item1.id === item2.id)
+    ));
+
+    // const productResults = await new Promise((resolve, reject) => {
+    //   db.query(query, [location], (err, result) => {
+    //     if (err) {
+    //       console.error("Error retrieving data: " + err.message);
+    //       reject(err);
+    //     } else {
+    //       // console.log('Data retrieved successfully');
+    //       resolve(result);
+    //     }
+    //   });
+    // });
+
+    if (productResults.length > 0) {
+      const imagesPromises = productResults.map((product) => {
+        return new Promise((resolve, reject) => {
+          const sql = "SELECT * FROM images WHERE id = ?";
+          db.query(sql, [product.productImageId], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+
+      const images = await Promise.all(imagesPromises);
+      // console.log(images);
+      return res.json([productResults, images]);
+    } else {
+      return res.json(null); // Return an empty response if no doctor details found
+    }
+  } catch (error) {
+    console.error("Error: ", error);
+    return res
+      .status(500)
+      .json({ error: "Error retrieving product details from the database" });
+  }
+
+});
+
+
+
 app.get("/medicines", (req, res) => {
   const sql = "Select * from product";
 
@@ -6535,41 +6807,41 @@ app.get("/madicine/medicineshops/:location", async (req, res) => {
   const location = req.params.location;
   const query =
     "SELECT  sub_admin.id ,name ,phone ,role, address_sub_admin.address_id ,Village ,P_O,City,district,State,pin_code,SubAdminImageId  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id where role = 'Medicine Shop' and permission = 'Approve' and address.pin_code = ? ";
-    const subResults = await new Promise((resolve, reject) => {
-      db.query(query,[location], (err, result) => {
-        if (err) {
-          console.error("Error retrieving data: " + err.message);
-          reject(err);
-        } else {
-          // console.log('Data retrieved successfully');
-          // console.log(result)
-          resolve(result);
-        }
+  const subResults = await new Promise((resolve, reject) => {
+    db.query(query, [location], (err, result) => {
+      if (err) {
+        console.error("Error retrieving data: " + err.message);
+        reject(err);
+      } else {
+        // console.log('Data retrieved successfully');
+        // console.log(result)
+        resolve(result);
+      }
+    });
+  });
+
+  if (subResults.length > 0) {
+    const imagesPromises = subResults.map((sub_admin) => {
+      return new Promise((resolve, reject) => {
+        const sql = "SELECT * FROM images WHERE id = ?";
+        db.query(sql, [sub_admin.SubAdminImageId], (err, result) => {
+          if (err) {
+            console.error("Database error: " + err);
+            reject(err);
+          } else {
+            // console.log(result[0]);
+            resolve(result[0]);
+          }
+        });
       });
     });
 
-    if (subResults.length > 0) {
-      const imagesPromises = subResults.map((sub_admin) => {
-        return new Promise((resolve, reject) => {
-          const sql = "SELECT * FROM images WHERE id = ?";
-          db.query(sql, [sub_admin.SubAdminImageId], (err, result) => {
-            if (err) {
-              console.error("Database error: " + err);
-              reject(err);
-            } else {
-              // console.log(result[0]);
-              resolve(result[0]);
-            }
-          });
-        });
-      });
-
-      const images = await Promise.all(imagesPromises);
-      // console.log(images);
-      return res.json([subResults, images]);
-    } else {
-      return res.json([]); // Return an empty response if no doctor details found
-    }
+    const images = await Promise.all(imagesPromises);
+    // console.log(images);
+    return res.json([subResults, images]);
+  } else {
+    return res.json([]); // Return an empty response if no doctor details found
+  }
 
 });
 
