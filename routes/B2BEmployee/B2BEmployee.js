@@ -7,7 +7,7 @@ const salt = 10;
 
 // route to handle the POST request to add a partner
 router.post('/add/b2b-employee', (req, res) => {
-    const { name, ph_num, email, aadhaar,pan,AadhaarCardImageID,PanCardImageID} = req.body;
+    const { name, ph_num, email, aadhaar,pan,employee_type,AadhaarCardImageID,PanCardImageID} = req.body;
     // console.log(req.body)
 
     if (!name || !ph_num || !email) {
@@ -34,10 +34,10 @@ router.post('/add/b2b-employee', (req, res) => {
         }
 
         // If the ph_num is not found in the database, proceed to add the new partner
-        const insertQuery = 'INSERT INTO b2b_employee (name, ph_num,permission,email,role,aadhaar, pan,AadhaarCardImageID,PanCardImageID) VALUES (?,?,?,?,?,?,?,?,?)';
+        const insertQuery = 'INSERT INTO b2b_employee (name, ph_num,permission,email,role,aadhaar, pan,AadhaarCardImageID,PanCardImageID,employee_type) VALUES (?,?,?,?,?,?,?,?,?,?)';
 
         // bcrypt.hash(password.toString(), salt, (err, hash) => {
-        db.query(insertQuery, [name, ph_num, 'Pending', email,'b2b_employee',aadhaar,pan,AadhaarCardImageID,PanCardImageID], (err, result) => {
+        db.query(insertQuery, [name, ph_num, 'Pending', email,'b2b_employee',aadhaar,pan,AadhaarCardImageID,PanCardImageID,employee_type], (err, result) => {
             if (err) {
                 console.log(err)
                 console.error('Error adding partner: ' + err);

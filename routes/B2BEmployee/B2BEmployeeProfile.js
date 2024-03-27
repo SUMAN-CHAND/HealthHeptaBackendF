@@ -97,6 +97,24 @@ router.get('/b2b-emp/home/profile', async (req, res) => {
 
     }
 })
+router.get('/b2b/sub_admin/profile/:sub_admin_id', async (req, res) => {
+    
+        const sub_admin_id = req.params.sub_admin_id;
+        // const sql = "SELECT  b2c_partner.id ,name ,ph_num ,address_partner.address_id ,Village ,P_O,City,district,State,Pin  FROM address_partner INNER JOIN address ON address_partner.address_id = address.address_id  INNER JOIN b2c_partner ON b2c_partner.id = address_partner.partner_id and b2c_partner.id = ?;";
+        // const sql1 = "SELECT  id ,name ,phone ,role FROM sub_admin where sub_admin.id = ?;";
+        const sql = "SELECT  sub_admin.id ,name ,phone ,role,SubAdminImageId,LicenceImageId,address_sub_admin.address_id ,Village ,P_O,City,district,State,pin_code  FROM address_sub_admin INNER JOIN address ON address_sub_admin.address_id = address.address_id  INNER JOIN sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id and sub_admin.id = ?;";
+
+        db.query(sql, [sub_admin_id], (err, data) => {
+            if (err) {
+                return res.json(err);
+            }
+            if (data.length > 0) {
+               return res.json(data);
+            }
+        })
+
+
+})
 
 
 module.exports = router;

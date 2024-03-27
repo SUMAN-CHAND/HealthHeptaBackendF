@@ -2658,13 +2658,13 @@ app.get("/doctors", async (req, res) => {
 // all specilizes doctores by location
 app.get("/doctors/:current_pin_code", async (req, res) => {
   const current_pin_code = req.params.current_pin_code;
-  const closestPinCodeup = (parseInt(current_pin_code)+1);
-  const closestPinCodedown = (parseInt(current_pin_code)-1);
+  const closestPinCodeup = (parseInt(current_pin_code) + 1);
+  const closestPinCodedown = (parseInt(current_pin_code) - 1);
   // console.log(current_pin_code)
   try {
     const query = "SELECT *,doctors_details.id as doc_id FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ?  or address.pin_code = ? or address.pin_code = ?; ";
     const doctorResults = await new Promise((resolve, reject) => {
-      db.query(query, [current_pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
+      db.query(query, [current_pin_code, closestPinCodeup, closestPinCodedown], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2730,14 +2730,14 @@ app.get("/specializes-doctors", async (req, res) => {
 // all specilizes doctores by location
 app.get("/specializes-doctors/:current_pin_code", async (req, res) => {
   const current_pin_code = req.params.current_pin_code;
-  const closestPinCodeup = (parseInt(current_pin_code)+1);
-  const closestPinCodedown = (parseInt(current_pin_code)-1);
+  const closestPinCodeup = (parseInt(current_pin_code) + 1);
+  const closestPinCodedown = (parseInt(current_pin_code) - 1);
   // console.log(current_pin_code)
   try {
     const query = "SELECT DISTINCT specializes FROM doctors_details inner join sub_admin on sub_admin.id = doctors_details.clinic_id inner join address_sub_admin on address_sub_admin.address_id = sub_admin.id inner join address on address.address_id = address_sub_admin.address_id where pin_code = ? or address.pin_code = ? or address.pin_code = ?; ";
 
     const doctorResults = await new Promise((resolve, reject) => {
-      db.query(query, [current_pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
+      db.query(query, [current_pin_code, closestPinCodeup, closestPinCodedown], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2759,14 +2759,14 @@ app.get("/specializes-doctors/:current_pin_code", async (req, res) => {
 app.get("/product/:location", async (req, res) => {
   const pin_code = req.params.location;
   // console.log(location)
-  const closestPinCodeup = (parseInt(pin_code)+1);
-  const closestPinCodedown = (parseInt(pin_code)-1);
+  const closestPinCodeup = (parseInt(pin_code) + 1);
+  const closestPinCodedown = (parseInt(pin_code) - 1);
 
   try {
     const query = "SELECT  *  FROM product INNER JOIN product_sub_admin ON product.product_id = product_sub_admin.product_id INNER JOIN sub_admin ON sub_admin.id = product_sub_admin.sub_admin_id INNER JOIN address_sub_admin ON sub_admin.id = address_sub_admin.sub_admin_id INNER JOIN address ON address_sub_admin.address_id = address.address_id   where  address.pin_code = ? or address.pin_code = ? or address.pin_code = ?;";
 
     const productResults = await new Promise((resolve, reject) => {
-      db.query(query, [pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
+      db.query(query, [pin_code, closestPinCodeup, closestPinCodedown], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2851,10 +2851,10 @@ app.get("/popular/product/:location", async (req, res) => {
     ORDER BY edit_count DESC;
     `;
 
-    const closestPinCodeup = (parseInt(pin_code)+1);
-    const closestPinCodedown = (parseInt(pin_code)-1);
+    const closestPinCodeup = (parseInt(pin_code) + 1);
+    const closestPinCodedown = (parseInt(pin_code) - 1);
     const productResultsByOrders = await new Promise((resolve, reject) => {
-      db.query(query,[pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
+      db.query(query, [pin_code, closestPinCodeup, closestPinCodedown], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -2902,7 +2902,7 @@ app.get("/popular/product/:location", async (req, res) => {
     GROUP BY product.product_id
     ORDER BY discount DESC;`;
     const productResultsByDiscount = await new Promise((resolve, reject) => {
-      db.query(discountQuery,[pin_code,closestPinCodeup,closestPinCodedown], (err, result) => {
+      db.query(discountQuery, [pin_code, closestPinCodeup, closestPinCodedown], (err, result) => {
         if (err) {
           console.error("Error retrieving data: " + err.message);
           reject(err);
@@ -7275,7 +7275,32 @@ app.get("/sub-admin/own/orders", (req, res) => {
     const user = req.session.user;
     if (user.role === "b2b_employee") {
       const sql1 =
-        " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id   where b2b_orders.b2b_employee_id = ?";
+        `SELECT 
+        b2b_orders.id,
+        b2b_product.product_id,
+        product_name,
+        sub_admin.name,
+        sub_admin_id,
+        order_date,
+        status,
+        total_amount,
+        payment_status,
+        payment_type
+    FROM
+        b2b_product
+            INNER JOIN
+        b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id
+            INNER JOIN
+        b2b_orders ON b2b_orders.id = b2b_order_items.order_id
+            INNER JOIN
+        sub_admin ON sub_admin.id = b2b_orders.sub_admin_id
+            INNER JOIN
+        b2b_payments ON b2b_orders.id = b2b_payments.order_id
+    WHERE
+        b2b_orders.b2b_employee_id = ?;
+        
+    `;
+      // " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id   where b2b_orders.b2b_employee_id = ?";
       db.query(sql1, [user_id], (err, data) => {
         if (err) {
           return res.json(err);
@@ -7288,8 +7313,33 @@ app.get("/sub-admin/own/orders", (req, res) => {
         }
       });
     } else {
-      const sql1 =
-        " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id   where b2b_orders.sub_admin_id = ?";
+      const sql1 = `    
+      SELECT 
+          b2b_orders.id,
+          b2b_product.product_id,
+          product_name,
+          sub_admin.name,
+          sub_admin_id,
+          order_date,
+          total_amount,
+          status,
+          payment_status,
+          payment_type
+      FROM
+          b2b_product
+              INNER JOIN
+          b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id
+              INNER JOIN
+          b2b_orders ON b2b_orders.id = b2b_order_items.order_id
+              INNER JOIN
+          sub_admin ON sub_admin.id = b2b_orders.sub_admin_id
+              INNER JOIN
+          b2b_payments ON b2b_orders.id = b2b_payments.order_id
+      WHERE
+          b2b_orders.sub_admin_id = ?;
+      
+      `;
+      // " SELECT b2b_orders.id, b2b_product.product_id , sub_admin_id,order_date,status,payment_status,payment_type  FROM b2b_product INNER JOIN b2b_order_items ON b2b_product.product_id = b2b_order_items.product_id INNER JOIN b2b_orders ON b2b_orders.id = b2b_order_items.order_id INNER JOIN b2b_payments ON b2b_orders.id = b2b_payments.order_id   where b2b_orders.sub_admin_id = ?";
       db.query(sql1, [user_id], (err, data) => {
         if (err) {
           return res.json(err);

@@ -133,7 +133,7 @@ router.post('/b2b/orders', async (req, res) => {
                 // io.emit('new-order', 'A new order has been placed.');
 
                 // res.json("success");
-                res.json([createOrder, productInfo]);
+                res.json([createOrder, productInfo,sub_admin_id]);
 
                 // res.json("success",{ message: 'Order placed successfully.' });
             } catch (error) {
