@@ -6214,131 +6214,265 @@ app.post("/sub-admin/signup", async (req, res) => {
   });
 });
 app.post("/sub_admin/complete_profile", async (req, res) => {
-  try {
-    console.log(req.body)
-    // const sql = "Insert into sub_admin (`LicenceImageId`,`SubAdminImageId`) values(?) where id = ?;";
-    const sql =
-      "UPDATE sub_admin SET LicenceImageId = ?, SubAdminImageId= ? , owner_name = ? , owner_phonenumber=? WHERE id = ?;";
-    // const values = [
-    //     req.body.LicenceImageId,
-    //     req.body.SubAdminImageId
-    // ]
+  if (req.session.user){
+    const userid = req.session.user.id;
+    const username = req.session.user.id;
     try {
-      db.query(
-        sql,
-        [
-          req.body[0].LicenceImageId,
-          req.body[0].SubAdminImageId,
-          req.body[0].owner_name,
-          req.body[0].owner_phonenumber,
-          req.body[0].subadmin_id,
-        ],
-        (err, data) => {
-          if (err) {
-            console.log(err);
-            return res.json(null);
-          }
-          // console.log('success img')
-          // return res.json(data);
-        }
-      );
-    } catch (error) {
-      return res.json(error);
-    }
-    const address = [
-      req.body[0].Village,
-      req.body[0].P_O,
-      req.body[0].City,
-      req.body[0].district,
-      req.body[0].state,
-      req.body[0].pin,
-    ];
-    const createAddress = await new Promise((resolve, reject) => {
+      // console.log(req.body)
+      // const sql = "Insert into sub_admin (`LicenceImageId`,`SubAdminImageId`) values(?) where id = ?;";
       const sql =
-        "insert into address (Village,P_O,City,district,state,pin_code)values(?);";
-      db.query(sql, [address], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          // console.log(result.insertId);
-          // console.log('success address')
-          resolve(result.insertId);
-        }
-      });
-    });
-    const insertAddressSubAdmin = await new Promise((resolve, reject) => {
-      const sql1 =
-        "insert into address_sub_admin (address_id,sub_admin_id)values(?,?);";
-      db.query(sql1, [createAddress, req.body[0].subadmin_id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-          // console.log('success address id')
-          // return res.json('success')
-        }
-      });
-    });
-    const pinCodes = req.body[1];
-    const insertAllPinCodes = pinCodes.map((pin) => {
-      return new Promise((resolve, reject) => {
-        const sql = "insert into sub_admin_service_pincodes (pin_code,sub_admin_id)values(?,?);";
-        db.query(sql, [pin.pin_code, req.body[0].subadmin_id], (err, result) => {
+        "UPDATE sub_admin SET LicenceImageId = ?, SubAdminImageId= ? , owner_name = ? , owner_phonenumber=? ,addedby = ?,addedbyb2bempid = ?  WHERE id = ?;";
+      // const values = [
+      //     req.body.LicenceImageId,
+      //     req.body.SubAdminImageId
+      // ]
+      try {
+        db.query(
+          sql,
+          [
+            req.body[0].LicenceImageId,
+            req.body[0].SubAdminImageId,
+            req.body[0].owner_name,
+            req.body[0].owner_phonenumber,
+            username,
+            userid,
+            req.body[0].subadmin_id,
+          ],
+          (err, data) => {
+            if (err) {
+              console.log(err);
+              return res.json(null);
+            }
+            // console.log('success img')
+            // return res.json(data);
+          }
+        );
+      } catch (error) {
+        return res.json(error);
+      }
+      const address = [
+        req.body[0].Village,
+        req.body[0].P_O,
+        req.body[0].City,
+        req.body[0].district,
+        req.body[0].state,
+        req.body[0].pin,
+      ];
+      const createAddress = await new Promise((resolve, reject) => {
+        const sql =
+          "insert into address (Village,P_O,City,district,state,pin_code)values(?);";
+        db.query(sql, [address], (err, result) => {
           if (err) {
-            console.error("Database error: " + err);
             reject(err);
           } else {
-            // console.log(result[0]);
-            resolve(result[0]);
+            // console.log(result.insertId);
+            // console.log('success address')
+            resolve(result.insertId);
           }
         });
       });
-    });
-
-
-    const createdAt = new Date().toISOString().split("T")[0];
-
-    const sub_admin_details = [
-      req.body[0].subadmin_id,
-      req.body[0].landmark,
-      req.body[0].OpeningTime,
-      req.body[0].CloseingTime,
-      req.body[0].Reg_id,
-      req.body[0].description,
-      createdAt,
-    ];
-    const insertSubAdminDetails = await new Promise((resolve, reject) => {
-      const sql =
-        "insert into sub_admin_details (sub_admin_id,Landmark,OpeningTime,CloseingTime,Reg_id,description,createdAt)values(?);";
-      db.query(sql, [sub_admin_details], (err, result) => {
-        if (err) {
-          console.log(err);
-          reject(err);
-        } else {
-          // console.log(result.insertId);
-          // console.log('success details')
-          resolve(result.insertId);
-          // return res.json('success')
-          if (req.session.user) {
-            if (req.session.user.role === 'b2b_employee') {
-              return res.json("success by b2b_employee");
-
-            } else {
-              return res.json("success by admin");
-            }
-
+      const insertAddressSubAdmin = await new Promise((resolve, reject) => {
+        const sql1 =
+          "insert into address_sub_admin (address_id,sub_admin_id)values(?,?);";
+        db.query(sql1, [createAddress, req.body[0].subadmin_id], (err, result) => {
+          if (err) {
+            reject(err);
           } else {
-            return res.json("success");
-
+            resolve(result);
+            // console.log('success address id')
+            // return res.json('success')
           }
-        }
+        });
       });
-    });
+      const pinCodes = req.body[1];
+      const insertAllPinCodes = pinCodes.map((pin) => {
+        return new Promise((resolve, reject) => {
+          const sql = "insert into sub_admin_service_pincodes (pin_code,sub_admin_id)values(?,?);";
+          db.query(sql, [pin.pin_code, req.body[0].subadmin_id], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+  
+  
+      const createdAt = new Date().toISOString().split("T")[0];
+  
+      const sub_admin_details = [
+        req.body[0].subadmin_id,
+        req.body[0].landmark,
+        req.body[0].OpeningTime,
+        req.body[0].CloseingTime,
+        req.body[0].Reg_id,
+        req.body[0].description,
+        createdAt,
+      ];
+      const insertSubAdminDetails = await new Promise((resolve, reject) => {
+        const sql =
+          "insert into sub_admin_details (sub_admin_id,Landmark,OpeningTime,CloseingTime,Reg_id,description,createdAt)values(?);";
+        db.query(sql, [sub_admin_details], (err, result) => {
+          if (err) {
+            console.log(err);
+            reject(err);
+          } else {
+            // console.log(result.insertId);
+            // console.log('success details')
+            resolve(result.insertId);
+            // return res.json('success')
+            if (req.session.user) {
+              if (req.session.user.role === 'b2b_employee') {
+                return res.json("success by b2b_employee");
+  
+              } else {
+                return res.json("success by admin");
+              }
+  
+            } else {
+              return res.json("success");
+  
+            }
+          }
+        });
+      });
+  
+  
+  
+    } catch (error) {
+      console.log(error);
+    }
 
-
-
-  } catch (error) {
-    console.log(error);
+  }else{
+    try {
+      // console.log(req.body)
+      // const sql = "Insert into sub_admin (`LicenceImageId`,`SubAdminImageId`) values(?) where id = ?;";
+      const sql =
+        "UPDATE sub_admin SET LicenceImageId = ?, SubAdminImageId= ? , owner_name = ? , owner_phonenumber=? WHERE id = ?;";
+      // const values = [
+      //     req.body.LicenceImageId,
+      //     req.body.SubAdminImageId
+      // ]
+      try {
+        db.query(
+          sql,
+          [
+            req.body[0].LicenceImageId,
+            req.body[0].SubAdminImageId,
+            req.body[0].owner_name,
+            req.body[0].owner_phonenumber,
+            req.body[0].subadmin_id,
+          ],
+          (err, data) => {
+            if (err) {
+              console.log(err);
+              return res.json(null);
+            }
+            // console.log('success img')
+            // return res.json(data);
+          }
+        );
+      } catch (error) {
+        return res.json(error);
+      }
+      const address = [
+        req.body[0].Village,
+        req.body[0].P_O,
+        req.body[0].City,
+        req.body[0].district,
+        req.body[0].state,
+        req.body[0].pin,
+      ];
+      const createAddress = await new Promise((resolve, reject) => {
+        const sql =
+          "insert into address (Village,P_O,City,district,state,pin_code)values(?);";
+        db.query(sql, [address], (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            // console.log(result.insertId);
+            // console.log('success address')
+            resolve(result.insertId);
+          }
+        });
+      });
+      const insertAddressSubAdmin = await new Promise((resolve, reject) => {
+        const sql1 =
+          "insert into address_sub_admin (address_id,sub_admin_id)values(?,?);";
+        db.query(sql1, [createAddress, req.body[0].subadmin_id], (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+            // console.log('success address id')
+            // return res.json('success')
+          }
+        });
+      });
+      const pinCodes = req.body[1];
+      const insertAllPinCodes = pinCodes.map((pin) => {
+        return new Promise((resolve, reject) => {
+          const sql = "insert into sub_admin_service_pincodes (pin_code,sub_admin_id)values(?,?);";
+          db.query(sql, [pin.pin_code, req.body[0].subadmin_id], (err, result) => {
+            if (err) {
+              console.error("Database error: " + err);
+              reject(err);
+            } else {
+              // console.log(result[0]);
+              resolve(result[0]);
+            }
+          });
+        });
+      });
+  
+  
+      const createdAt = new Date().toISOString().split("T")[0];
+  
+      const sub_admin_details = [
+        req.body[0].subadmin_id,
+        req.body[0].landmark,
+        req.body[0].OpeningTime,
+        req.body[0].CloseingTime,
+        req.body[0].Reg_id,
+        req.body[0].description,
+        createdAt,
+      ];
+      const insertSubAdminDetails = await new Promise((resolve, reject) => {
+        const sql =
+          "insert into sub_admin_details (sub_admin_id,Landmark,OpeningTime,CloseingTime,Reg_id,description,createdAt)values(?);";
+        db.query(sql, [sub_admin_details], (err, result) => {
+          if (err) {
+            console.log(err);
+            reject(err);
+          } else {
+            // console.log(result.insertId);
+            // console.log('success details')
+            resolve(result.insertId);
+            // return res.json('success')
+            if (req.session.user) {
+              if (req.session.user.role === 'b2b_employee') {
+                return res.json("success by b2b_employee");
+  
+              } else {
+                return res.json("success by admin");
+              }
+  
+            } else {
+              return res.json("success");
+  
+            }
+          }
+        });
+      });
+  
+  
+  
+    } catch (error) {
+      console.log(error);
+    }
   }
 });
 
